@@ -53,9 +53,9 @@
       </div>
       <div class="stage-hint hidden" id="stageHint">Click the map to place the point. Esc cancels.</div>
       <div class="zoombar hidden" id="zoombar">
-        <button id="zIn" title="Zoom in">+</button>
-        <button id="zOut" title="Zoom out">−</button>
-        <button id="zFit" title="Fit the whole map" style="font-size:12px">fit</button>
+        <button id="zIn" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21M10 7.5v5M7.5 10h5"/></svg></button>
+        <button id="zOut" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21M7.5 10h5"/></svg></button>
+        <button id="zFit" title="Fit the whole map" aria-label="Fit the whole map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
       </div>
     </main>
 
@@ -69,6 +69,8 @@
       </div>
     </aside>
   </div>
+  <div class="leaf l" aria-hidden="true"></div>
+  <div class="leaf r" aria-hidden="true"></div>
 </div>
 
 <input type="file" id="filePicker" accept="image/*" class="hidden">

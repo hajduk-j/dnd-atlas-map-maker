@@ -296,6 +296,50 @@ button{font:inherit;color:inherit;cursor:pointer}
   max-width:520px;padding:26px;border-radius:3px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 .about h3{font-family:var(--display);font-size:24px;margin:0 0 10px}
 
+.zoom button{
+  background:linear-gradient(#3a342c,#1c1813);border-color:#0e0a05;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.2),inset 0 0 0 1px rgba(138,106,54,.45),0 1px 3px rgba(0,0,0,.55);
+}
+
+/* ---------- chrome: plates of metal and engraved rules ---------- */
+:root{--plate-top:#3c352c;--plate-bot:#211c17;--tex:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.45' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .33 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .3 -.08'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.ghost,.zoom button{
+  background:linear-gradient(var(--plate-top),var(--plate-bot));
+  border:1px solid var(--line-2);border-radius:2px;color:var(--linen);
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 -1px 0 rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.45);
+}
+.ghost{font-family:var(--display);font-weight:600;letter-spacing:.04em;padding:7px 15px}
+.zoom button{display:grid;place-items:center;padding:0;color:#d9bf8a}
+.zoom button svg{width:19px;height:19px;display:block}
+.zoom button:hover{color:#f0d9a6}
+.ghost:hover,.zoom button:hover{filter:brightness(1.16);background:linear-gradient(var(--plate-top),var(--plate-bot))}
+.ghost:active,.zoom button:active{transform:translateY(1px)}
+.rgn,.zhint{
+  background:linear-gradient(#2a251f,#171410);border-color:var(--line-2);border-radius:2px;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.14),0 6px 18px rgba(0,0,0,.5);
+}
+.ttl{font-size:19px;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 18px rgba(220,174,106,.22)}
+.ttl small{text-transform:none;font-style:italic;letter-spacing:.01em;text-shadow:none}
+.legend span{font-family:var(--display);font-weight:600;letter-spacing:.04em;color:#bfb49a}
+/* the atlas introduction is a sheet of the same vellum as the panel, in its double rule */
+.about{background:radial-gradient(ellipse at 50% 40%,rgba(16,13,10,.7),rgba(4,3,2,.88))}
+.about .box{
+  background:var(--tex),radial-gradient(120% 70% at 8% 0%,rgba(255,247,222,.65),transparent 62%),linear-gradient(var(--paper),var(--paper-2));
+  border:1px solid rgba(60,34,10,.85);border-radius:2px;padding:36px 40px 30px;
+  outline:3px double rgba(86,58,24,.5);outline-offset:-10px;
+  box-shadow:inset 0 0 70px rgba(86,48,14,.5),inset 0 0 12px rgba(60,30,8,.5),0 34px 90px rgba(0,0,0,.75);
+}
+.about h3{font-size:23px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px}
+.about h3::after{
+  content:"";display:block;height:7px;margin:8px 0 14px;
+  background:
+    linear-gradient(rgba(86,58,24,.5),rgba(86,58,24,.5)) left 0 top 3px / calc(50% - 9px) 1px no-repeat,
+    linear-gradient(rgba(86,58,24,.5),rgba(86,58,24,.5)) right 0 top 3px / calc(50% - 9px) 1px no-repeat,
+    linear-gradient(45deg,transparent 40%,rgba(86,58,24,.5) 41% 59%,transparent 60%) center / 7px 7px no-repeat;
+}
+.about .ghost{background:linear-gradient(#ecdfb9,#cdb985);border-color:rgba(80,52,20,.55);color:#2a1e0f;
+  box-shadow:inset 0 1px 0 rgba(255,250,232,.55),0 1px 2px rgba(0,0,0,.25)}
+
 @media (max-width:760px){
   :root{--panel-w:0px}
   body.has-recap .recap-btn{display:inline-block}
@@ -328,7 +372,8 @@ button{font:inherit;color:inherit;cursor:pointer}
    breakpoint but the finger is the same size. */
 @media (pointer:coarse){
   .zoom{right:calc(var(--panel-w) + 12px);bottom:calc(14px + env(safe-area-inset-bottom, 0px));gap:8px}
-  .zoom button{width:44px;height:44px;font-size:20px}
+  .zoom button{width:44px;height:44px}
+  .zoom button svg{width:22px;height:22px}
   .sh-close{width:38px;height:38px;font-size:18px}
   .car-nav button{width:40px;height:40px}
   .dots button{width:9px;height:9px}
@@ -350,9 +395,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="zhint" id="zhint" aria-hidden="true">Zoom in to reveal places</div>
 
 <div class="zoom">
-  <button id="zi" aria-label="Zoom in">+</button>
-  <button id="zo" aria-label="Zoom out">&#8722;</button>
-  <button id="zf" aria-label="Fit the whole map" style="font-size:11px">fit</button>
+  <button id="zi" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21M10 7.5v5M7.5 10h5"/></svg></button>
+  <button id="zo" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21M7.5 10h5"/></svg></button>
+  <button id="zf" aria-label="Fit the whole map" title="Fit the whole map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
 </div>
 
 <div class="rgn" id="rgn" aria-hidden="true"><i></i><span></span></div>
@@ -1001,7 +1046,7 @@ if(!MOBILE.matches){ if(HAS_RECAP) showRecap(); else showIntro(); }
       var h=document.createElement('h3'); h.textContent=DATA.title; box.appendChild(h);
       box.appendChild(prose(DATA.intro));
       var cl=document.createElement('button'); cl.className='ghost'; cl.textContent='Close';
-      cl.style.marginTop='18px'; cl.style.color='#241c11'; cl.style.borderColor='rgba(60,44,20,.4)';
+      cl.style.marginTop='18px';
       cl.onclick=function(){ ov.remove(); };
       box.appendChild(cl); ov.appendChild(box);
       ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); });

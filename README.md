@@ -50,6 +50,38 @@ download needed).
 6. **Export site** → downloads `index.html` with the whole map inside.
 7. Later, **Open project** takes that same `index.html` back and you carry on where you left off.
 
+### Pictures in the finished map
+
+In the side panel the title of a place scrolls away with its text, while the session switch and the
+tabs stay in place, so a long text never squeezes the picture. A place's picture is capped to a
+height that leaves room to read, and a character's portrait sits beside their text. Click any
+picture to open it full screen, whole and in color; for a place with several pictures the arrow
+keys or buttons move between them, and Escape closes it.
+
+**Animated pictures.** A GIF, an animated WebP or an APNG can be used as a character's portrait or a
+place's picture, for example an idle loop. It is stored exactly as it was picked, because the editor
+cannot shrink an animation without losing every frame but the first, so it is held to **6 MB and
+650 px on the longer side**; a larger one is refused with a message that says why. Only the picture
+you can see is drawn, so a carousel of animated portraits costs no more than one. The export tells
+how much of the file is animation and warns above 12 MB in all. A reader whose system asks for less
+motion gets the first frame instead; opening the picture full screen plays it. Animated WebP is
+usually several times smaller than the same loop as a GIF.
+
+**Videos.** A portrait, a region's picture or a place's picture can also be a short silent video:
+an MP4 (H.264) or a WebM of up to **2 MB, 650 px on the longer side and 20 seconds**, which is
+usually the smallest way to carry a loop. It plays muted, in a loop, and only while it is on screen,
+and a reader who asks for less motion gets its first frame. Opening it full screen shows it with
+controls. An MP4 has no transparency; a WebM may, but not in every browser. A video counts towards
+the animation total in the export window. A file this browser cannot play is refused with a message.
+
+On a phone a profile reads from the top down: the character's name and title, then their picture or
+video across the whole width of the screen (you scroll past it), then the whole story below. A place
+reads the same way, with its picture across the width and no cap on its height.
+
+On a phone the panel is a page of its own: it slides up over the whole screen, with a **Map** button
+and the session switch in one row at the top, and the Back button of the phone closes it and returns
+to the map instead of leaving the atlas.
+
 ### Regions
 
 A region is a faction that can additionally carry territory. Both parts are optional — a
@@ -101,6 +133,23 @@ boundaries with the same name are one entry; leave the name empty to keep it out
 Regions do not react to the pointer while a line is being drawn. In the finished map the lines
 lie over the regions and under the places, and never take a click.
 
+### Players and parties
+
+**Map settings → Players** holds a profile for each person at the table: name, class, a short
+bio and a portrait. **Parties** are the markers that stand for a group of them on the map.
+
+A party has a color, a list of members and, for each session, a position, a note on what it did
+and, if you want, a flag saying it has left the map. Each of these holds until a later session
+changes it, so only the changes are written down. To split the group, add a second party in
+the session where it divides and give each the members that went with it.
+
+In the editor the bar above the map says which session you are placing parties in; drag a
+party to move it in that session. In the finished map a party is a flag in a ring with the
+number of its members. When the reader switches session it slides to its new place and keeps
+a dotted trail behind it through everywhere it has stood. Clicking it opens the panel with its
+note for that session (**Notes**) and its members as profiles (**Members**). Like the rest of
+the atlas, parties appear with the places once the reader has zoomed in.
+
 ### The overview
 
 Pulled all the way back, the finished map shows drifting clouds and the title artwork, and the
@@ -114,19 +163,20 @@ An atlas can be read at several moments of the campaign. **Map settings → Sess
 timeline. The map itself never changes between sessions: points stay where they are. Sessions
 only decide what the side panel shows.
 
-- **Recap.** Write what happened under each session. As soon as one session has a recap, the
-  panel on the right of the finished map gets a switch at its top, **Session recap** or
-  **Place**. The map opens on the recap of the session being read, and clicking a point flips
-  the panel to that place. On a phone the header gets a **Session recap** button that opens the
-  same panel.
+- **Recap.** Write what happened under each session. In the finished map the panel, with nothing
+  chosen, is the **overview**: the session switch at its top and the recap of the session being read
+  under it. When no session has a recap it shows the introduction of the atlas, and the switch stays.
+  Click a place and the panel is only about that place, with no switch and no recap to click through;
+  **Overview** at the top (or Esc, or a click on the bare map) goes back, and that is where the session
+  is changed. On a phone the header button (**Session recap**, or **Sessions** when none has a recap)
+  opens the overview, and the **Map** button leaves a place.
 - **Held back until a session.** On a point you can choose from which session its description,
   its pictures and each of its characters appear. Before that session the panel shows nothing
   for them (“Nothing has been written about this place yet.”). Use this to let a place fill up
   as the campaign goes on. A point that should not be on the map at all stays a matter for
   **Hide from players**, which applies to the whole atlas.
 
-At the top of the panel in the finished map a small switch walks between sessions. The reader
-lands in the last one, the world as it stands, and can go back. Everything is in the file, so
+The reader lands in the last session, the world as it stands, and can go back in the overview. Everything is in the file, so
 this is a way to pace the reading, not a secret: anyone who opens the file's source can read
 what is held back. With fewer than two sessions there is no switch and nothing is held back.
 
@@ -194,6 +244,14 @@ One project is one JSON object:
   "intro": "Optional intro text.",
   "map": { "src": "data:image/jpeg;base64,…", "w": 2600, "h": 1700 },
   "frame": true,                  // engrave a border onto the sheet; absent counts as true
+  "players": [{ "id": "p1", "name": "Mira", "role": "half-elf ranger", "description": "…", "image": "data:image/jpeg;base64,…" }],
+  "parties": [{                   // optional markers that travel from session to session
+    "id": "g1", "label": "The vanguard", "color": "#5b8fd6",
+    "steps": {                    // keyed by session id, or "base" before any session exists
+      "s1": { "x": 0.3, "y": 0.55, "members": ["p1"], "note": "Left the harbour." },
+      "s2": { "x": 0.7, "y": 0.3 }  // each field holds until a later session changes it; "gone": true removes it
+    }
+  }],
   "boundaries": [{                // optional lines drawn over the map
     "id": "k1", "label": "The old border",   // empty label: not in the legend
     "color": "#ffffff", "style": "dashed",   // style: "solid" | "dashed" | "dotted"

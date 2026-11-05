@@ -30,6 +30,7 @@ var S = null;
 var sel = null;          // id of the selected point
 var selReg = null;       // id of the selected region (a point or a region is selected, never both)
 var mode = null;         // null | "poi" | "anchor" | "area" | "line" — what a click is placing right now
+var curSession = -1;     // the session the parties are being placed in; -1 while the atlas has no sessions
 var modeReg = null;      // id of the region whose area or big pin is being drawn
 var draft = null;        // polygon being drawn [[x,y],…]
 var tab = "area";        // inspector tab
@@ -47,6 +48,8 @@ function blank(){
     map:null,                       // {src,w,h}
     frame:true,                     // engrave a border onto the sheet (off for maps that have one)
     boundaries:[],                  // lines drawn over the map: [{id,label,color,style,paths:[[[x,y],…],…]}]
+    players:[],                     // the people at the table: [{id,name,role,description,image}]
+    parties:[],                     // groups that travel the map: [{id,label,color,steps:{sessionId|"base":{x,y,members,note,gone}}}]
     background:"magic",             // behind the map in the finished site: "magic", "snow" or "mist"
     titleImage:null,                // artwork shown above the map when the view is pulled back
     // Sessions are the atlas read at different moments of the campaign. The map is the same in
@@ -87,6 +90,40 @@ function heldFrom(id){
     p.characters.forEach(function(c){ if(c.from===id) n++; });
   });
   return n;
+}
+/* A party is a marker on the map that stands for a group of players. Where it stands, who is in it and
+   a note on what it did are kept per session, and each of them holds until a later session changes it:
+   a party that nobody moves stays put, and a split is simply a second party that starts in the session
+   where the group divides. "base" is the step used before any session exists. */
+var PARTY_COLORS = ["#5b8fd6","#d9825b","#7fb86a","#c58ad8","#e0c25a","#59b8b0"];
+function newPlayer(){ return {id:uid(), name:"New player", role:"", description:"", image:null}; }
+function newParty(label, color){ return {id:uid(), label:label, color:color, steps:{}}; }
+function sessKey(i){ return (i<0 || !S.sessions[i]) ? "base" : S.sessions[i].id; }
+function partyState(pt, idx){
+  var st = {placed:false, gone:false, x:0, y:0, members:[], note:""};
+  for(var i=-1; i<=idx && i<S.sessions.length; i++){
+    var s = pt.steps[sessKey(i)];
+    if(!s) continue;
+    if(s.x!=null){ st.x=s.x; st.y=s.y; st.placed=true; st.gone=false; }
+    if(s.members) st.members=s.members;
+    if(s.gone===true) st.gone=true;
+  }
+  var here = pt.steps[sessKey(idx)];
+  st.note = (here && here.note) || "";
+  st.present = st.placed && !st.gone;
+  return st;
+}
+function stepOf(pt){
+  var k = sessKey(curSession);
+  return pt.steps[k] || (pt.steps[k] = {});
+}
+function playerById(id){
+  for(var i=0;i<S.players.length;i++) if(S.players[i].id===id) return S.players[i];
+  return null;
+}
+function clampSession(){
+  if(!S.sessions.length) curSession = -1;
+  else if(curSession<0 || curSession>=S.sessions.length) curSession = S.sessions.length-1;
 }
 /* A region is a faction that can additionally carry borders and a big pin.
    Both are optional — a faction without official borders leaves `area` and `anchor` empty. */
@@ -137,7 +174,130 @@ function selectRegion(id){ selReg=id; sel=null; tab="area"; }
 function selectNone(){ sel=null; selReg=null; }
 
 /* ============================ images ============================ */
-function readImage(file, maxDim, quality){
+/* Is this picture animated? A GIF has more than one frame, an animated WebP says so in its VP8X flags,
+   an APNG has an acTL chunk before its image data. Read from the first bytes, not from the pixels. */
+function animatedKind(b){
+  var i, n, t;
+  if(b.length>13 && b[0]===71 && b[1]===73 && b[2]===70){                       // "GIF"
+    i=13; if(b[10]&128) i+=3*(1<<((b[10]&7)+1));
+    n=0;
+    while(i<b.length){
+      t=b[i++];
+      if(t===59) break;
+      if(t===33){ i++; while(i<b.length && b[i]!==0) i+=b[i]+1; i++; }
+      else if(t===44){
+        n++; if(n>1) return 'gif';
+        var lf=b[i+8]; i+=9; if(lf&128) i+=3*(1<<((lf&7)+1));
+        i++; while(i<b.length && b[i]!==0) i+=b[i]+1; i++;
+      } else break;
+    }
+    return '';
+  }
+  if(b.length>21 && b[0]===82 && b[1]===73 && b[2]===70 && b[3]===70 && b[8]===87 && b[9]===69 && b[10]===66 && b[11]===80){   // RIFF....WEBP
+    return (b[12]===86 && b[13]===80 && b[14]===56 && b[15]===88 && (b[20]&2)) ? 'webp' : '';
+  }
+  if(b.length>16 && b[0]===137 && b[1]===80 && b[2]===78 && b[3]===71){          // PNG
+    i=8;
+    while(i+8<=b.length){
+      var len=((b[i]<<24)|(b[i+1]<<16)|(b[i+2]<<8)|b[i+3])>>>0, ty=String.fromCharCode(b[i+4],b[i+5],b[i+6],b[i+7]);
+      if(ty==='acTL') return 'apng';
+      if(ty==='IDAT') return '';
+      i+=12+len;
+    }
+  }
+  return '';
+}
+/* An animation cannot be shrunk here: drawing it onto a canvas keeps only its first frame. So it is stored
+   exactly as it was picked, and held to a size and a pixel limit instead, because it is decoded and painted
+   frame after frame on every reader's screen. The pictures in the side panel are small, so a small animation
+   loses nothing there. */
+var ANIM_MAX_BYTES = 6*1048576, ANIM_MAX_SIDE = 650, ANIM_BUDGET = 12*1048576;
+function readAnimated(file){
+  if(!/^image\/(gif|webp|png)$/.test(file.type)) return Promise.resolve(null);
+  // a GIF needs all of it read to count its frames; WebP and PNG say it in their first bytes
+  var head = file.type==="image/gif" ? file : file.slice(0, 65536);
+  return new Promise(function(res, rej){
+    var fr = new FileReader();
+    fr.onerror = function(){ rej(new Error("The file could not be read.")); };
+    fr.onload = function(){
+      var kind = animatedKind(new Uint8Array(fr.result));
+      if(!kind) return res(null);
+      if(file.size > ANIM_MAX_BYTES) return rej(new Error("That animation is "+fmtSize(file.size)+". The limit is "+fmtSize(ANIM_MAX_BYTES)+": shorten it, make it smaller or save it with fewer colors."));
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onerror = function(){ URL.revokeObjectURL(url); rej(new Error("The image could not be loaded.")); };
+      im.onload = function(){
+        URL.revokeObjectURL(url);
+        var w = im.naturalWidth, h = im.naturalHeight;
+        if(Math.max(w,h) > ANIM_MAX_SIDE) return rej(new Error("That animation is "+w+" × "+h+" px. The limit is "+ANIM_MAX_SIDE+" px on the longer side."));
+        var rd = new FileReader();
+        rd.onerror = function(){ rej(new Error("The file could not be read.")); };
+        rd.onload = function(){
+          var mime = {gif:"image/gif", webp:"image/webp", apng:"image/png"}[kind];
+          res({src:String(rd.result).replace(/^data:[^;,]*/, "data:"+mime), w:w, h:h, animated:true});
+        };
+        rd.readAsDataURL(file);
+      };
+      im.src = url;
+    };
+    fr.readAsArrayBuffer(head);
+  });
+}
+/* A video is kept as it is picked, as a data URI like every picture, and is held to a size, a pixel and a
+   length limit, since it is decoded for every reader. It plays as a silent loop, so it should carry no
+   sound (that only makes it larger). MP4 needs H.264, which every browser plays; a file this browser
+   cannot play is refused, because a reader's browser would likely not play it either. */
+var VIDEO_MAX_BYTES = 2*1048576, VIDEO_MAX_SIDE = 650, VIDEO_MAX_SECONDS = 20;
+function isVideoFile(f){ return /^video\/(mp4|webm|x-m4v)$/.test(f.type) || (!f.type && /\.(mp4|m4v|webm)$/i.test(f.name||"")); }
+function isVideoSrc(s){ return typeof s==="string" && s.indexOf("data:video/")===0; }
+function readVideo(file){
+  return new Promise(function(res, rej){
+    if(file.size > VIDEO_MAX_BYTES) return rej(new Error("That video is "+fmtSize(file.size)+". The limit is "+fmtSize(VIDEO_MAX_BYTES)+": shorten it, make it smaller or lower its quality."));
+    var url = URL.createObjectURL(file), v = document.createElement("video");
+    v.muted = true; v.preload = "metadata";
+    function fail(msg){ URL.revokeObjectURL(url); rej(new Error(msg)); }
+    v.onerror = function(){ fail("This browser cannot play that video. Save it as an H.264 MP4 or a WebM."); };
+    v.onloadedmetadata = function(){
+      var w = v.videoWidth, h = v.videoHeight, d = v.duration;
+      URL.revokeObjectURL(url);
+      if(!w || !h) return rej(new Error("That file has no picture in it."));
+      if(Math.max(w,h) > VIDEO_MAX_SIDE) return rej(new Error("That video is "+w+" × "+h+" px. The limit is "+VIDEO_MAX_SIDE+" px on the longer side."));
+      if(isFinite(d) && d > VIDEO_MAX_SECONDS) return rej(new Error("That video is "+Math.round(d)+" s long. The limit is "+VIDEO_MAX_SECONDS+" s."));
+      var rd = new FileReader();
+      rd.onerror = function(){ rej(new Error("The file could not be read.")); };
+      rd.onload = function(){
+        var mime = /webm$/i.test(file.type) || /\.webm$/i.test(file.name||"") ? "video/webm" : "video/mp4";
+        res({src:String(rd.result).replace(/^data:[^;,]*/, "data:"+mime), w:w, h:h, video:true});
+      };
+      rd.readAsDataURL(file);
+    };
+    v.src = url;
+  });
+}
+/* A picture or a video, whichever the file is. */
+function readMedia(file, maxDim, quality){
+  return isVideoFile(file) ? readVideo(file) : readImage(file, maxDim, quality, true);
+}
+/* Shown in the editor: an image, or a muted looping video made from the data URI. */
+var blobCache = {};
+function blobUrl(uri){
+  if(blobCache[uri]) return blobCache[uri];
+  var cut = uri.indexOf(","), mime = uri.slice(5, uri.indexOf(";")), raw = atob(uri.slice(cut+1)), arr = new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+  return (blobCache[uri] = URL.createObjectURL(new Blob([arr], {type:mime})));
+}
+function mediaNode(src){
+  if(!isVideoSrc(src)){ var im = new Image(); im.src = src; im.alt = ""; return im; }
+  var v = document.createElement("video");
+  v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true;
+  v.setAttribute("muted", ""); v.setAttribute("playsinline", "");
+  v.src = blobUrl(src);
+  return v;
+}
+function readImage(file, maxDim, quality, allowAnim){
+  if(!allowAnim) return drawImage(file, maxDim, quality);
+  return readAnimated(file).then(function(r){ return r || drawImage(file, maxDim, quality); });
+}
+function drawImage(file, maxDim, quality){
   return new Promise(function(res, rej){
     if(!file || !/^image\//.test(file.type)) return rej(new Error("That is not an image."));
     var url = URL.createObjectURL(file);
@@ -162,10 +322,16 @@ function readImage(file, maxDim, quality){
     im.src = url;
   });
 }
+/* "image/*" alone leaves out a file type whenever the system has no registered name for it, which on
+   Windows hides .webp in the file dialog. Naming the extensions as well makes them show up. */
+var IMAGE_ACCEPT = "image/*,.jpg,.jpeg,.png,.webp,.gif,.apng";
+// the pictures of people and places may also be a short silent video
+var MEDIA_ACCEPT = IMAGE_ACCEPT + ",video/mp4,video/webm,.mp4,.m4v,.webm";
+function acceptFor(accept){ return (!accept || accept==="image/*") ? IMAGE_ACCEPT : accept; }
 function pickFile(accept){
   return new Promise(function(res){
     var inp = document.createElement("input");
-    inp.type="file"; inp.accept=accept||"image/*";
+    inp.type="file"; inp.accept=acceptFor(accept);
     inp.onchange=function(){ res(inp.files && inp.files[0] ? inp.files[0] : null); };
     inp.click();
   });
@@ -173,7 +339,7 @@ function pickFile(accept){
 function pickFiles(accept){
   return new Promise(function(res){
     var inp = document.createElement("input");
-    inp.type="file"; inp.accept=accept||"image/*"; inp.multiple=true;
+    inp.type="file"; inp.accept=acceptFor(accept); inp.multiple=true;
     inp.onchange=function(){ res(inp.files ? Array.prototype.slice.call(inp.files) : []); };
     inp.click();
   });
@@ -455,6 +621,23 @@ function renderMap(){
       function(){ selectPoi(p.id); renderAll(); });
     cv.appendChild(el);
   });
+
+  // the parties stand where the session being edited has them, and can be dragged to move them
+  S.parties.forEach(function(pt){
+    var st = partyState(pt, curSession);
+    if(!st.present) return;
+    var el = document.createElement("div");
+    el.className="pin party"; el.dataset.pid=pt.id;
+    el.style.left = (st.x*100)+"%"; el.style.top = (st.y*100)+"%";
+    el.style.setProperty("--pc", pt.color);
+    el.innerHTML = '<div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4"/><path d="M6 5h11l-3 4 3 4H6"/></svg><span class="badge"></span></div><div class="lbl"></div>';
+    el.querySelector(".badge").textContent = st.members.length;
+    el.querySelector(".lbl").textContent = pt.label;
+    attachDrag(el,
+      function(n){ var step = stepOf(pt); step.x=n.x; step.y=n.y; delete step.gone; },
+      function(){ toast("Drag it to move this party. Its members are edited in Map settings."); });
+    cv.appendChild(el);
+  });
 }
 /* A border engraved onto the sheet, for map images that bring none of their own: two rules
    with a tinted margin between them and a lozenge at the corners and the middle of each side.
@@ -651,12 +834,12 @@ function textarea(value, oninput, placeholder, rows){
   t.addEventListener("input", function(){ oninput(t.value); });
   return t;
 }
-function imagePicker(current, onset, hint, maxDim){
+function imagePicker(current, onset, hint, maxDim, allowVideo){
   var box = el("div","thumb");
   function paint(){
     box.innerHTML="";
     if(current){
-      var im=new Image(); im.src=current; im.alt=""; box.appendChild(im);
+      box.appendChild(mediaNode(current));
       var x = el("button","x","×"); x.title="Remove image";
       x.onclick=function(ev){ ev.stopPropagation(); current=null; onset(null); paint(); };
       box.appendChild(x);
@@ -665,9 +848,9 @@ function imagePicker(current, onset, hint, maxDim){
     }
   }
   box.onclick=function(){
-    pickFile("image/*").then(function(f){
+    pickFile(allowVideo ? MEDIA_ACCEPT : "image/*").then(function(f){
       if(!f) return;
-      return readImage(f, maxDim||1400, .82).then(function(r){
+      return (allowVideo ? readMedia(f, maxDim||1400, .82) : readImage(f, maxDim||1400, .82, true)).then(function(r){
         current=r.src; onset(r.src); paint();
       });
     }).catch(function(e){ toast(e.message); });
@@ -685,7 +868,7 @@ function galleryPicker(owner){
     box.innerHTML="";
     owner.images.forEach(function(src, i){
       var t = el("div","thumb");
-      var im = new Image(); im.src=src; im.alt=""; t.appendChild(im);
+      t.appendChild(mediaNode(src));
       var x = el("button","x","×"); x.title="Remove image";
       x.onclick=function(){ owner.images.splice(i,1); paint(); persist(); };
       t.appendChild(x);
@@ -701,11 +884,11 @@ function galleryPicker(owner){
     });
     var add = el("div","thumb add", owner.images.length ? "Add images" : "Click to add pictures of the place");
     add.onclick=function(){
-      pickFiles("image/*").then(function(files){
+      pickFiles(MEDIA_ACCEPT).then(function(files){
         // one after another, so they land in the order they were picked
         return files.reduce(function(chain, f){
           return chain.then(function(){
-            return readImage(f, 1400, .82).then(function(r){ owner.images.push(r.src); });
+            return readMedia(f, 1400, .82).then(function(r){ owner.images.push(r.src); });
           });
         }, Promise.resolve());
       }).then(function(){ paint(); persist(); })
@@ -812,7 +995,7 @@ function renderChars(host, owner){
   owner.characters.forEach(function(c, idx){
     var box = el("div","char");
     var top = el("div","char-top");
-    top.appendChild(imagePicker(c.image, function(v){ c.image=v; persist(); }, "portrait", 700));
+    top.appendChild(imagePicker(c.image, function(v){ c.image=v; persist(); }, "portrait", 700, true));
     var fields = el("div","fields");
     fields.appendChild(input(c.name, function(v){ c.name=v; persist(); }, "Name"));
     fields.appendChild(input(c.role, function(v){ c.role=v; persist(); }, "Role, e.g. captain of the guard"));
@@ -912,7 +1095,7 @@ function renderRegionInspector(host, f){
   host.appendChild(pinBox);
 
   host.appendChild(field("Region image",
-    imagePicker(f.image, function(v){ f.image=v; persist(); }, "Click to add a region image", 1400)));
+    imagePicker(f.image, function(v){ f.image=v; persist(); }, "Click to add a region image", 1400, true)));
   host.appendChild(field("Short description",
     input(f.summary, function(v){ f.summary=v; persist(); }, "One sentence under the region's name")));
   host.appendChild(field("Region description",
@@ -925,13 +1108,33 @@ function renderRegionInspector(host, f){
   host.appendChild(wrap);
 }
 
-function renderAll(){ renderMap(); renderList(); renderInspector(); }
+function renderAll(){ renderSessions(); renderMap(); renderList(); renderInspector(); }
+
+/* ============================ session being edited ============================ */
+var sessBar = document.getElementById("sessBar");
+function renderSessions(){
+  clampSession();
+  // one session is no timeline: the bar would only be in the way
+  var show = !!(S.map && S.sessions.length>1);
+  sessBar.classList.toggle("hidden", !show);
+  if(!show) return;
+  document.getElementById("sessName").textContent = S.sessions[curSession].label;
+  document.getElementById("sessCount").textContent = (curSession+1)+" / "+S.sessions.length;
+  document.getElementById("sessPrev").disabled = curSession===0;
+  document.getElementById("sessNext").disabled = curSession===S.sessions.length-1;
+}
+function goSession(i){
+  curSession = Math.max(0, Math.min(S.sessions.length-1, i));
+  renderAll();
+}
+document.getElementById("sessPrev").onclick = function(){ goSession(curSession-1); };
+document.getElementById("sessNext").onclick = function(){ goSession(curSession+1); };
 
 /* ============================ toast + modal ============================ */
 function toast(msg){
   var t = el("div","toast",msg);
   document.body.appendChild(t);
-  setTimeout(function(){ t.remove(); }, 2600);
+  setTimeout(function(){ t.remove(); }, Math.max(2600, String(msg).length*60));
 }
 function modal(build, wide){
   var scrim = el("div","scrim");
@@ -1089,6 +1292,122 @@ document.getElementById("btnSettings").onclick = function(){
     paintBounds();
     sheet.appendChild(blist);
 
+    sheet.appendChild(el("h3",null,"Players"));
+    sheet.appendChild(el("p","sub","The people at your table: a profile each, with a portrait. Put them into parties below, and readers meet them by clicking a party on the finished map."));
+    var pllist = el("div");
+    function paintPlayers(){
+      pllist.innerHTML="";
+      S.players.forEach(function(pl){
+        var box = el("div","char");
+        var top = el("div","char-top");
+        top.appendChild(imagePicker(pl.image, function(v){ pl.image=v; persist(); }, "portrait", 700, true));
+        var fields = el("div","fields");
+        fields.appendChild(input(pl.name, function(v){ pl.name=v; persist(); }, "Name"));
+        fields.appendChild(input(pl.role, function(v){ pl.role=v; persist(); }, "Class, e.g. half-elf ranger"));
+        top.appendChild(fields);
+        box.appendChild(top);
+        box.appendChild(textarea(pl.description, function(v){ pl.description=v; persist(); }, "Who they are, where they come from, what they want.", 3));
+        var acts = el("div","char-actions");
+        var rm = el("button","mini del","Remove");
+        rm.onclick=function(){
+          S.players = S.players.filter(function(q){ return q.id!==pl.id; });
+          S.parties.forEach(function(pt){
+            for(var k in pt.steps){ if(pt.steps[k].members) pt.steps[k].members = pt.steps[k].members.filter(function(id){ return id!==pl.id; }); }
+          });
+          paintPlayers(); paintParties(); renderMap(); persist();
+        };
+        acts.appendChild(rm); box.appendChild(acts);
+        pllist.appendChild(box);
+      });
+      var addp = el("button","addbtn","Add player");
+      addp.onclick=function(){ S.players.push(newPlayer()); paintPlayers(); paintParties(); persist(); };
+      pllist.appendChild(addp);
+    }
+    sheet.appendChild(pllist);
+
+    sheet.appendChild(el("h3",null,"Parties"));
+    sheet.appendChild(el("p","sub","A party is a marker on the map for a group of players. Where it stands, who is in it and a note on what it did are set per session and hold until you change them. To split the group, add a second party in the session where it divides. Drag a party on the map to move it in the session shown above the map."));
+    var partyHost = el("div");
+    function paintParties(){
+      partyHost.innerHTML="";
+      if(S.sessions.length){
+        var sf = el("div","field");
+        sf.appendChild(el("label",null,"Session being edited"));
+        var ss = document.createElement("select"); ss.className="inp";
+        S.sessions.forEach(function(se, i){
+          var o = document.createElement("option"); o.value=String(i); o.textContent=se.label; ss.appendChild(o);
+        });
+        clampSession(); ss.value = String(curSession);
+        ss.onchange=function(){ curSession=+ss.value; renderAll(); paintParties(); };
+        sf.appendChild(ss); partyHost.appendChild(sf);
+      }
+      S.parties.forEach(function(pt, i){
+        var st = partyState(pt, curSession);
+        var box = el("div","char");
+        var row = el("div","reg-row");
+        var pc = document.createElement("input"); pc.type="color"; pc.value=lineColor(pt.color);
+        pc.oninput=function(){ pt.color=pc.value; renderMap(); persist(); };
+        var pn = input(pt.label, function(v){ pt.label=v; renderMap(); persist(); }, "Party name");
+        var prm = el("button","mini del x","×");
+        prm.onclick=function(){ S.parties.splice(i,1); paintParties(); renderMap(); persist(); };
+        row.appendChild(pc); row.appendChild(pn); row.appendChild(prm);
+        box.appendChild(row);
+
+        var stat = !st.placed ? "Not on the map yet in this session." : (st.gone ? "Has left the map in this session." : "On the map. Drag its marker to move it in this session.");
+        box.appendChild(el("p","sub",stat));
+        var acts = el("div","char-actions"); acts.style.justifyContent="flex-start";
+        if(!st.present){
+          var place = el("button","mini", st.placed ? "Return to the map" : "Place on the map");
+          place.onclick=function(){
+            if(!S.map) return toast("Upload a map image first.");
+            var step = stepOf(pt);
+            step.x = st.placed ? st.x : .5; step.y = st.placed ? st.y : .5; delete step.gone;
+            paintParties(); renderMap(); persist();
+          };
+          acts.appendChild(place);
+        } else {
+          var leave = el("button","mini","Leave the map in this session");
+          leave.onclick=function(){ stepOf(pt).gone = true; paintParties(); renderMap(); persist(); };
+          acts.appendChild(leave);
+        }
+        box.appendChild(acts);
+
+        var mem = el("div","field"); mem.style.marginTop="10px";
+        mem.appendChild(el("label",null,"Members"));
+        if(!S.players.length) mem.appendChild(el("p","sub","Add players above first."));
+        S.players.forEach(function(pl){
+          var lab = el("label","check");
+          var cb = document.createElement("input"); cb.type="checkbox"; cb.checked = st.members.indexOf(pl.id)>=0;
+          cb.onchange=function(){
+            var list = partyState(pt, curSession).members.filter(function(id){ return id!==pl.id; });
+            if(cb.checked) list.push(pl.id);
+            stepOf(pt).members = list;
+            renderMap(); persist();
+          };
+          lab.appendChild(cb); lab.appendChild(document.createTextNode(pl.name || "(unnamed)"));
+          mem.appendChild(lab);
+        });
+        box.appendChild(mem);
+        var here = pt.steps[sessKey(curSession)];
+        box.appendChild(field("What the party did in this session",
+          textarea((here && here.note) || "", function(v){ stepOf(pt).note=v; persist(); }, "Optional. Shown to readers when they open the party in this session.", 3)));
+        partyHost.appendChild(box);
+      });
+      var addpt = el("button","addbtn","Add party");
+      addpt.onclick=function(){
+        if(!S.map) return toast("Upload a map image first.");
+        clampSession();
+        var pt = newParty("Party "+(S.parties.length+1), PARTY_COLORS[S.parties.length % PARTY_COLORS.length]);
+        var step = stepOf(pt); step.x=.5; step.y=.5; step.members=[];
+        S.parties.push(pt);
+        paintParties(); renderMap(); persist();
+      };
+      partyHost.appendChild(addpt);
+    }
+    paintPlayers();
+    paintParties();
+    sheet.appendChild(partyHost);
+
     sheet.appendChild(el("h3",null,"Base map"));
     var mapInfo = el("p","sub", S.map ? ("Currently "+S.map.w+"×"+S.map.h+" px, "+fmtSize(bytesOf(S.map.src))+".") : "No map yet.");
     sheet.appendChild(mapInfo);
@@ -1232,6 +1551,26 @@ function normalize(d){
   });
   var known = {};
   b.sessions.forEach(function(s){ known[s.id]=1; });
+  b.players = (d.players||[]).map(function(p){
+    return {id:p.id||uid(), name:p.name||"", role:p.role||"", description:p.description||"", image:p.image||null};
+  });
+  var pids = {};
+  b.players.forEach(function(p){ pids[p.id]=1; });
+  b.parties = (d.parties||[]).map(function(pt, i){
+    var steps = {};
+    for(var k in (pt.steps||{})){
+      if(k!=="base" && !known[k]) continue;
+      var src = pt.steps[k] || {}, o = {};
+      if(src.x!=null && src.y!=null && isFinite(src.x) && isFinite(src.y)){
+        o.x = Math.max(0, Math.min(1, +src.x)); o.y = Math.max(0, Math.min(1, +src.y));
+      }
+      if(src.members && src.members.length!==undefined) o.members = src.members.filter(function(id){ return pids[id]; });
+      if(src.note) o.note = String(src.note);
+      if(src.gone===true) o.gone = true;
+      steps[k] = o;
+    }
+    return {id:pt.id||uid(), label:pt.label||("Party "+(i+1)), color:lineColor(pt.color), steps:steps};
+  });
   b.pois = (d.pois||[]).map(function(p){
     // anything held back until a session that is gone is simply shown from the start
     var chars = (p.characters||[]).map(normChar);
@@ -1294,6 +1633,26 @@ var VIEWER = __VIEWER__;
 function esc(s){
   return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
+/* Every picture in the project that is animated, as bytes in the exported file (base64 is a third larger). */
+function animatedInProject(){
+  var list = [], n = 0, bytes = 0;
+  function look(uri){
+    if(isVideoSrc(uri)){ n++; bytes += uri.length; return; }
+    if(!uri || typeof uri!=="string" || !/^data:image\/(gif|webp|png)/.test(uri)) return;
+    var isGif = uri.indexOf("data:image/gif")===0, cut = uri.indexOf(",")+1;
+    var b64 = uri.slice(cut, isGif ? undefined : cut+87384);
+    try{
+      var raw = atob(b64.slice(0, b64.length - b64.length%4)), arr = new Uint8Array(raw.length);
+      for(var i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+      if(animatedKind(arr)){ n++; bytes += uri.length; }
+    }catch(e){}
+  }
+  look(S.titleImage);
+  S.players.forEach(function(p){ look(p.image); });
+  S.factions.forEach(function(f){ look(f.image); (f.characters||[]).forEach(function(c){ look(c.image); }); });
+  S.pois.forEach(function(p){ (p.images||[]).forEach(look); p.characters.forEach(function(c){ look(c.image); }); });
+  return {count:n, bytes:bytes};
+}
 function buildSite(){
   // The whole project is packed into the file, which is what lets the finished map be
   // opened here again. Which part of it the map draws is decided in the viewer: hidden
@@ -1344,7 +1703,14 @@ document.getElementById("btnExport").onclick = function(){
     var ul = el("div");
     ul.style.cssText="border:1px solid var(--line);border-radius:3px;padding:12px 14px;margin-bottom:16px;color:var(--linen-2);line-height:1.8";
     ul.innerHTML = "Points on the map: <b>"+visible+"</b><br>Regions with territory: <b>"+regs+"</b><br>Characters in total: <b>"+chars+"</b><br>File size: <b>"+fmtSize(html.length)+"</b>";
+    var anim = animatedInProject();
+    if(anim.count) ul.innerHTML += "<br>Animated pictures and videos: <b>"+anim.count+"</b> ("+fmtSize(anim.bytes)+")";
     sheet.appendChild(ul);
+    if(anim.bytes > ANIM_BUDGET){
+      var aw = el("p","sub","The animations add up to "+fmtSize(anim.bytes)+". Many large animations make the page heavy to open, especially on a phone. Consider fewer or smaller ones.");
+      aw.style.color="var(--danger)";
+      sheet.appendChild(aw);
+    }
     if(kept){
       // the file is meant to be handed out, so say plainly what leaves with it
       var note = el("p","sub","Hidden points packed in: "+kept+". They stay off the map, but anyone who opens the file can read them.");
@@ -1393,6 +1759,7 @@ var TOUR_STEPS = [
     items:["Regions: draw territory and place a big name across the land.",
            "Sessions: write a recap for each one, and hold a place's text, pictures or characters back until the session where they come up.",
            "Boundary lines: draw solid, dashed or dotted lines over the map for borders, roads or rivers. Named lines go in the legend.",
+           "Players and parties: give each player a profile, group them into parties and move a party from session to session. Readers see a marker that travels and leaves a trail.",
            "Border: engrave a frame onto map images that have none."] },
   { title:"4. Preview, save and share",
     text:"Preview shows what visitors will see. Export site downloads the finished map as one index.html.",

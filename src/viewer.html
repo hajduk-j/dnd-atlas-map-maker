@@ -133,6 +133,20 @@ button{font:inherit;color:inherit;cursor:pointer}
 .boundaries polyline{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
 .boundaries .halo{stroke:rgba(0,0,0,.4);stroke-width:4.8px}
 .boundaries .line{stroke-width:2.3px}
+/* the path a party has taken, as dots in its own color over a dark under-line */
+.trails{position:absolute;top:0;left:0;overflow:visible;pointer-events:none;opacity:var(--pins,1)}
+.trails polyline{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:.1 7}
+.trails .halo{stroke:rgba(20,12,4,.45);stroke-width:6.5px}
+.trails .line{stroke-width:3.4px}
+/* a party: a flag in a ring, with the number of its members; it slides when the session changes */
+.pin.party{--knob:22px}
+.pin.party .knob{position:relative;border:2px solid #f0dcae;box-shadow:0 0 0 1.5px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.6)}
+.pin.party .knob svg{width:12px;height:12px;color:#0b1012}
+.pin.party .badge{
+  position:absolute;right:-9px;top:-9px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;
+  background:#1b1610;border:1px solid #b4874a;color:#f0dcae;font:700 10px/14px var(--display);text-align:center;
+}
+.pin.party.away{opacity:0;visibility:hidden;pointer-events:none}
 /* region areas: invisible unless the region asks to be shown; either way they let the map know which
    region you are over. A shown area is a wash of the region's colour inside a fine line of it, over a
    dark under-line that keeps it readable on pale ground, and it comes in with the places. */
@@ -197,19 +211,18 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* the switch between the session recap and the place: two engraved plates, the chosen one inked in */
 .sh-top{margin:24px 28px 0}
 .sh-top[hidden]{display:none}
-.sh-mode{display:flex;margin:0;border:1px solid var(--sepia-rule);border-radius:2px;
-  background:rgba(255,246,214,.28);box-shadow:inset 0 1px 3px rgba(60,34,10,.18)}
-.sh-mode[hidden]{display:none}
-.sh-mode button{flex:1;background:none;border:none;border-radius:1px;padding:7px 10px;
-  font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
-  color:#6b5330;transition:background .18s,color .18s}
-.sh-mode button + button{border-left:1px solid var(--sepia-rule)}
-.sh-mode button:hover{color:var(--sepia-ink);background:rgba(255,246,214,.35)}
-.sh-mode button[aria-selected="true"]{background:var(--sepia-ink);color:var(--vellum);
-  box-shadow:inset 0 0 0 1px rgba(255,246,214,.18)}
+/* The panel has two views. With nothing chosen it is the overview: the session switch and the recap of the
+   session being read. Once a place is chosen it is only about that place, with a way back to the overview. */
+.sheet .sh-sess,.sheet .sh-back{display:none}
+.sheet.view-default .sh-sess:not([hidden]){display:flex}
+.sheet.view-place .sh-back{display:inline-flex}
+.sh-back{align-items:center;gap:6px;height:32px;padding:0 12px 0 8px;margin:0 0 4px;font-family:var(--display);font-weight:600;
+  font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sepia-ink);background:rgba(255,246,214,.3);
+  border:1px solid var(--sepia-rule);border-radius:2px}
+.sh-back:hover{background:rgba(255,246,214,.6)}
 .sh-top:not([hidden]) + .sh-head{padding-top:18px}
-.sheet.mode-recap .sh-tabs button{display:none}
-.sheet.mode-recap .sh-tabs{height:0;margin:16px 0 0}
+/* the overview has no tabs: they belong to a place */
+.sheet.view-default .sh-tabs{display:none}
 .sh-kicker{text-transform:uppercase;letter-spacing:.2em;font-size:11px;color:var(--rubric)}
 .sh-kicker i{border:1px solid rgba(40,20,5,.5)}
 .sh-title{font-size:26px;letter-spacing:.05em;text-transform:uppercase;line-height:1.15;color:var(--sepia-ink)}
@@ -227,7 +240,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .prose p:first-child:not(.none){display:flow-root}
 .prose p:first-child:not(.none)::first-letter{font-family:var(--display);font-weight:700;color:var(--rubric);
   float:left;font-size:3.1em;line-height:.82;padding:.06em .09em 0 0}
-.sh-body img.area,.gal-win,.slide img{border-color:rgba(60,34,10,.55);filter:sepia(.32) saturate(.88) contrast(1.02);
+.sh-body .area,.gal-win,.slide img{border-color:rgba(60,34,10,.55);filter:sepia(.32) saturate(.88) contrast(1.02);
   box-shadow:0 1px 0 rgba(255,244,214,.5),0 3px 8px rgba(50,28,8,.35)}
 .slide h4{text-transform:uppercase;letter-spacing:.07em;font-size:18px}
 .hint,.none,.slide .role,.car-count small{color:#6b5330}
@@ -260,14 +273,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sh-body::-webkit-scrollbar-thumb:hover{background:rgba(122,90,36,.75);background-clip:content-box}
 .hint{margin:18px 0 0;padding-top:14px;border-top:1px solid rgba(60,44,20,.28);
   color:var(--paper-mute);font-style:italic}
-.sh-body img.area{width:100%;border-radius:2px;border:1px solid rgba(60,44,20,.35);margin-bottom:16px;display:block}
+.sh-body .area{width:100%;border-radius:2px;border:1px solid rgba(60,44,20,.35);margin-bottom:16px;display:block}
 /* several pictures of a place: a frame shaped by the first, the others shown whole inside it */
 .gal{margin-bottom:16px}
 .gal-win{overflow:hidden;aspect-ratio:3 / 2;border-radius:2px;border:1px solid rgba(60,44,20,.35);
   background:rgba(60,44,20,.1);touch-action:pan-y}
 .gal-win .track{height:100%}
 .gal-slide{flex:0 0 100%;min-width:0;height:100%}
-.gal-slide img{width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}
+.gal-slide img,.gal-slide video{width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}
 .gal .car-nav{margin-top:10px}
 .prose p{margin:0 0 .85em;line-height:1.68;max-width:62ch}
 .prose p:last-child{margin-bottom:0}
@@ -278,8 +291,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .car-win{overflow:hidden}
 .track{display:flex;transition:transform .3s cubic-bezier(.22,.7,.3,1)}
 .slide{flex:0 0 100%;min-width:0;padding:0 1px}
-.slide img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:2px;
+.slide img,.slide video{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:2px;
   border:1px solid rgba(60,44,20,.4);display:block;margin-bottom:12px;filter:saturate(.92)}
+.slide video,.sh-body video.area,.gal-slide video{filter:none}
 .slide .ph{width:100%;aspect-ratio:3/4;border:1px dashed rgba(60,44,20,.35);border-radius:2px;
   display:grid;place-items:center;color:var(--paper-mute);margin-bottom:12px;font-style:italic;font-size:13px}
 .slide h4{font-family:var(--display);font-size:21px;font-weight:600;margin:0 0 1px}
@@ -299,6 +313,33 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dots button{width:7px;height:7px;padding:0;border-radius:50%;border:none;background:rgba(60,44,20,.3)}
 .dots button[aria-current="true"]{background:#7a5a24;transform:scale(1.4)}
 
+/* the title block now scrolls away with the text, so the head holds only the tabs */
+.sh-head{padding:24px 28px 0}
+.sh-top:not([hidden]) + .sh-head{padding-top:14px}
+.sh-intro{margin:0 0 14px}
+.sh-intro .sh-title{margin-right:0}
+/* pictures keep to a height that leaves room for the text, and open full screen on a click */
+.sh-body img,.sh-body video{cursor:zoom-in}
+.sh-body .area{max-height:min(44vh,340px);object-fit:cover}
+.gal-win{max-height:min(44vh,340px)}
+/* a portrait sits beside the text it belongs to instead of above it */
+.slide{display:flow-root}
+.slide img,.slide video,.slide .ph{float:left;width:42%;max-width:170px;margin:2px 16px 8px 0}
+.slide h4{margin-top:0}
+.lightbox{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:26px;cursor:zoom-out;
+  background:radial-gradient(ellipse at 50% 40%,rgba(16,13,10,.93),rgba(4,3,2,.97))}
+.lightbox img,.lightbox video{max-width:min(94vw,1500px);max-height:82vh;object-fit:contain;cursor:default;
+  border:1px solid rgba(180,135,74,.6);box-shadow:0 24px 80px rgba(0,0,0,.75)}
+.lb-cap{position:fixed;left:0;right:0;bottom:18px;text-align:center;font-family:var(--display);font-size:14px;
+  letter-spacing:.06em;color:#e3cf9f;text-shadow:0 1px 3px #000;pointer-events:none}
+.lb-btn{position:fixed;width:44px;height:44px;border-radius:2px;border:1px solid rgba(224,178,110,.45);
+  background:rgba(12,8,5,.6);color:#e3cf9f;font-size:26px;line-height:1;display:grid;place-items:center;padding:0}
+.lb-btn:hover:not(:disabled){background:rgba(224,178,110,.16);color:#f6e6bb}
+.lb-btn:disabled{opacity:.25;cursor:default}
+.lb-close{top:16px;right:16px}
+.lb-prev,.lb-next{top:50%;margin-top:-22px}
+.lb-prev{left:16px}
+.lb-next{right:16px}
 .about{position:fixed;inset:0;z-index:40;background:rgba(6,10,11,.76);display:grid;place-items:center;padding:24px}
 .about .box{background:linear-gradient(var(--paper),var(--paper-2));color:var(--paper-ink);
   max-width:520px;padding:26px;border-radius:3px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -350,18 +391,42 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 @media (max-width:760px){
   :root{--panel-w:0px}
-  body.has-recap .recap-btn{display:inline-block}
-  .sh-close{display:block}
-  .sh-close{top:20px;right:20px}
-  .sh-top{margin-right:68px}
-  .car .car-nav{top:-14px;margin:-14px -6px 14px -8px;padding:14px 6px 10px 8px}
+  body.has-sessions .recap-btn{display:inline-block}
+  /* the panel is a page of its own: it slides up over the whole screen and has a plain way back */
+  .sh-close{display:flex;position:relative;top:auto;right:auto;align-items:center;gap:7px;width:auto;height:38px;align-self:flex-start;
+    margin:calc(12px + env(safe-area-inset-top, 0px)) 0 0 14px;padding:0 14px 0 9px;font-size:0}
+  .sh-close::before{content:"\2039";font-size:26px;line-height:1;margin-top:-3px}
+  .sh-close::after{content:"Map";font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  /* the way back and the session switch share one row, so little of the screen is taken from the page */
+  .sh-top{position:static;margin:8px 18px 0}
+  /* on a phone the Map button is the way back from a place, so the top row is only for the overview */
+  .sheet.view-place .sh-top{display:none}
+  .sh-sess{position:absolute;top:calc(12px + env(safe-area-inset-top, 0px));left:112px;right:14px;height:38px;margin:0;gap:3px}
+  .sh-sess button{width:32px;height:32px}
+  .sh-sess .sess-name{font-size:13px}
+  .car .car-nav{top:-14px}
   /* dvh, because on a phone the browser bar slides away and vh does not follow */
-  .sheet{top:auto;left:0;width:100%;height:80vh;transition:transform .28s cubic-bezier(.22,.7,.3,1);height:80dvh;border-left:none;border-top:1px solid rgba(60,44,20,.5);
-    border-radius:6px 6px 0 0;transform:translateY(100%);box-shadow:0 -18px 50px rgba(0,0,0,.5)}
+  .sheet{top:0;left:0;width:100%;height:100vh;height:100dvh;transition:transform .32s cubic-bezier(.22,.7,.3,1);
+    border-left:none;border-top:none;border-radius:0;transform:translateY(100%);box-shadow:none}
+  .sheet::after{outline-offset:-6px}
   .sheet.open{transform:none}
-  .sh-head{padding:16px 18px 0}
+  .sh-head{padding:12px 18px 0}
   .sh-title{font-size:24px}
-  .sh-body{margin-top:12px;margin-bottom:calc(15px + env(safe-area-inset-bottom, 0px));padding:14px 6px 20px 18px}
+  .sh-body{margin:12px 0 calc(15px + env(safe-area-inset-bottom, 0px)) 0;padding:14px 16px 24px}
+  /* a profile on a phone reads from the top down: the name and the title, then the picture or the video
+     across the whole width (you scroll past it), then the whole story below */
+  .slide{display:flex;flex-direction:column}
+  .slide h4{order:1;font-size:26px;margin:0}
+  .slide .role{order:2;font-size:15px;margin:2px 0 14px}
+  .slide img,.slide video,.slide .ph{order:3;float:none;width:100%;max-width:none;aspect-ratio:3/4;margin:0 0 16px}
+  .slide .prose{order:4}
+  .slide .prose p{max-width:none}
+  .car .car-nav{margin:-14px -4px 12px;padding:14px 4px 10px}
+  /* a place: its picture across the width too, with no ceiling on its height */
+  .sh-body .area{max-height:none;width:100%}
+  .gal-win{max-height:none}
+  /* on the characters tab the place's own one-line summary steps aside, so the person comes first */
+  .sheet.view-chars .sh-sum{display:none}
   .legend{display:none}
   .ttl{font-size:17px}
   .hdr{padding:9px 14px;gap:10px}
@@ -413,26 +478,27 @@ button{font:inherit;color:inherit;cursor:pointer}
 <aside class="sheet" id="sheet" aria-label="Details">
   <button class="sh-close" id="shClose" aria-label="Close">&#215;</button>
   <div class="sh-top" id="shTop" hidden>
+    <button class="sh-back" id="shBack" type="button">&#8249; Overview</button>
     <div class="sh-sess" id="shSess" hidden>
       <button id="sessPrev" aria-label="Earlier session">&#8249;</button>
       <span class="sh-sess-body"><span class="sess-name" id="sessName"></span><span class="sess-count" id="sessCount"></span></span>
       <button id="sessNext" aria-label="Later session">&#8250;</button>
     </div>
-    <div class="sh-mode" id="shMode" role="tablist" aria-label="Panel" hidden>
-      <button id="modeRecap" role="tab" aria-selected="false">Session recap</button>
-      <button id="modePlace" role="tab" aria-selected="true">Place</button>
-    </div>
   </div>
   <div class="sh-head">
-    <div class="sh-kicker" id="shKicker"></div>
-    <h2 class="sh-title" id="shTitle"></h2>
-    <p class="sh-sum" id="shSum"></p>
     <div class="sh-tabs" role="tablist">
       <button id="tabArea" role="tab" aria-selected="true">Area</button>
       <button id="tabChars" role="tab" aria-selected="false">Characters</button>
     </div>
   </div>
-  <div class="sh-body" id="shBody"></div>
+  <div class="sh-body" id="shBody">
+    <div class="sh-intro">
+      <div class="sh-kicker" id="shKicker"></div>
+      <h2 class="sh-title" id="shTitle"></h2>
+      <p class="sh-sum" id="shSum"></p>
+    </div>
+    <div id="shContent"></div>
+  </div>
 </aside>
 
 <script type="application/json" id="atlas-project">__DATA__</script>
@@ -463,6 +529,21 @@ function published(p){
         style:(b.style==='solid'||b.style==='dotted')?b.style:'dashed', paths:paths};
     }).filter(function(b){ return b.paths.length; }),
     background:(p.background==='snow'||p.background==='mist')?p.background:'magic',
+    players:(p.players||[]).map(function(q){
+      return {id:q.id, name:q.name||'', role:q.role||'', description:q.description||'', image:q.image||null};
+    }),
+    parties:(p.parties||[]).map(function(pt){
+      var steps={};
+      for(var k in (pt.steps||{})){
+        var s0=pt.steps[k]||{}, o={};
+        if(s0.x!=null && s0.y!=null && isFinite(s0.x) && isFinite(s0.y)){ o.x=+s0.x; o.y=+s0.y; }
+        if(s0.members && s0.members.length!==undefined) o.members=s0.members;
+        if(s0.note) o.note=String(s0.note);
+        if(s0.gone===true) o.gone=true;
+        steps[k]=o;
+      }
+      return {id:pt.id, label:pt.label||'Party', color:lineCol(pt.color), steps:steps};
+    }),
     titleImage:p.titleImage||null,
     factions:(p.factions||[]).map(function(f){
       var pinned = !!f.anchor;
@@ -484,7 +565,7 @@ function fac(p){
   for(var i=0;i<DATA.factions.length;i++) if(DATA.factions[i].id===p.factionId) return DATA.factions[i];
   return null;
 }
-function col(p){ var f=fac(p); return f?f.color:'#8a8f8c'; }
+function col(p){ if(p.color) return p.color; var f=fac(p); return f?f.color:'#8a8f8c'; }
 function rgba(hex,a){
   var h=hex.replace('#','');
   if(h.length===3) h=h.charAt(0)+h.charAt(0)+h.charAt(1)+h.charAt(1)+h.charAt(2)+h.charAt(2);
@@ -638,12 +719,11 @@ function endPan(e){
   if(pan&&e.pointerId===pan.id){ pan=null; vp.classList.remove('drag'); }
 }
 vp.addEventListener('pointerup',endPan); vp.addEventListener('pointercancel',endPan);
-// On a phone a click on the bare map puts the panel away. Not the end of a drag or a pinch, though, and
-// not a click on a pin — that one opens a place of its own.
+// A click on the bare map leaves the place that is open: back to the overview on a wide screen, the panel put
+// away on a phone. Not the end of a drag or a pinch, though, and not a click on a pin, which opens a place.
 vp.addEventListener('click',function(e){
   if(e.target.closest('.pin') || (tap && tap.moved)) return;
-  // on a wide screen the panel stays where it is; only the bottom sheet is put away
-  if(MOBILE.matches && sheet.classList.contains('open')) closeSheet();
+  if(cur) closeSheet();
 });
 document.getElementById('zi').onclick=function(){var r=vp.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1.3)};
 document.getElementById('zo').onclick=function(){var r=vp.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1/1.3)};
@@ -672,6 +752,94 @@ function pinEl(p, big){
   b.setAttribute('aria-label',p.name+', '+(big?'region':(TYPES[p.type]||'')));
   b.onclick=function(){ openPlace(p); };
   return b;
+}
+/* --- parties: markers that travel from session to session --- */
+/* Where a party stands, who is in it and a note on it are kept per session and hold until a later
+   session changes them, so a party nobody moves stays where it is. "base" is the step used before
+   any session exists. A party that has no position yet, or has left the map, is not drawn. */
+var partyEls={};
+function sIdx(){ return DATA.sessions.length ? SESSION : -1; }
+function skey(i){ return (i<0 || !DATA.sessions[i]) ? 'base' : DATA.sessions[i].id; }
+function playerById(id){
+  for(var i=0;i<DATA.players.length;i++) if(DATA.players[i].id===id) return DATA.players[i];
+  return null;
+}
+function partyState(pt, idx){
+  var st={placed:false, gone:false, x:0, y:0, members:[], note:''};
+  for(var i=-1; i<=idx && i<DATA.sessions.length; i++){
+    var s=pt.steps[skey(i)];
+    if(!s) continue;
+    if(s.x!=null){ st.x=s.x; st.y=s.y; st.placed=true; st.gone=false; }
+    if(s.members) st.members=s.members;
+    if(s.gone===true) st.gone=true;
+  }
+  var here=pt.steps[skey(idx)];
+  st.note=(here && here.note) || '';
+  st.present=st.placed && !st.gone;
+  return st;
+}
+/* A party reaches the panel as a place of its own: its note is the text, its members the characters. */
+function partyPlace(pt){
+  var st=partyState(pt, sIdx());
+  var people=st.members.map(function(id){ return playerById(id); }).filter(Boolean).map(function(q){
+    return {name:q.name, role:q.role, description:q.description, image:q.image};
+  });
+  return {id:'party-'+pt.id, name:pt.label, isParty:true, party:pt, color:pt.color,
+    summary: st.present ? '' : 'Not on the map in this session.', description:st.note,
+    images:[], characters:people};
+}
+function partyPin(pt){
+  var b=document.createElement('button');
+  b.className='pin party away'; b.dataset.id='party-'+pt.id;
+  b.style.setProperty('--pc', pt.color);
+  b.innerHTML='<span class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4"/><path d="M6 5h11l-3 4 3 4H6"/><\/svg><span class="badge"><\/span><\/span><span class="lbl"><\/span>';
+  b.querySelector('.lbl').textContent=pt.label;
+  b.setAttribute('aria-label', pt.label+', party');
+  b.onclick=function(){ openPlace({isParty:true, party:pt}); };
+  partyEls[pt.id]=b;
+  return b;
+}
+/* Puts every party where the session being read has it, and draws the path it has taken to get there:
+   a dotted line through the places it has stood, in its own color, under the markers. */
+function updateParties(){
+  if(!DATA.parties.length) return;
+  var idx=sIdx(), NS='http://www.w3.org/2000/svg';
+  var old=cv.querySelector('.trails');
+  if(old) old.parentNode.removeChild(old);
+  var svg=document.createElementNS(NS,'svg'), any=false;
+  svg.setAttribute('class','trails'); svg.setAttribute('aria-hidden','true');
+  svg.setAttribute('width',DATA.map.w); svg.setAttribute('height',DATA.map.h);
+  svg.setAttribute('viewBox','0 0 '+DATA.map.w+' '+DATA.map.h);
+  DATA.parties.forEach(function(pt){
+    var st=partyState(pt, idx), el=partyEls[pt.id];
+    if(el){
+      if(st.present){
+        el.style.left=(st.x*100)+'%'; el.style.top=(st.y*100)+'%';
+        el.querySelector('.badge').textContent=st.members.length;
+        el.classList.remove('away');
+      } else el.classList.add('away');
+    }
+    if(!st.present) return;
+    var pts=[], last=null;
+    for(var i=-1; i<=idx && i<DATA.sessions.length; i++){
+      var s=pt.steps[skey(i)];
+      if(!s || s.x==null) continue;
+      if(!last || last[0]!==s.x || last[1]!==s.y){ last=[s.x,s.y]; pts.push(last); }
+    }
+    if(pts.length<2) return;
+    var str=pts.map(function(q){ return (q[0]*DATA.map.w).toFixed(1)+','+(q[1]*DATA.map.h).toFixed(1); }).join(' ');
+    ['halo','line'].forEach(function(k){
+      var pl=document.createElementNS(NS,'polyline');
+      pl.setAttribute('class',k); pl.setAttribute('points',str);
+      if(k==='line') pl.setAttribute('stroke',pt.color);
+      svg.appendChild(pl);
+    });
+    any=true;
+  });
+  if(any){
+    var first=cv.querySelector('.pin');
+    if(first) cv.insertBefore(svg, first); else cv.appendChild(svg);
+  }
 }
 /* The frame is engraved onto the sheet rather than hung around it, so it never changes where
    a point sits: everything is in map units and the points keep their own coordinates. */
@@ -763,6 +931,8 @@ function drawMap(){
   clouds.mount(cv);
   DATA.factions.forEach(function(f){ if(f.anchor) cv.appendChild(pinEl(regionPlace(f), true)); });
   DATA.pois.forEach(function(p){ cv.appendChild(pinEl(p, false)); });
+  DATA.parties.forEach(function(pt){ cv.appendChild(partyPin(pt)); });
+  updateParties();
 }
 
 /* --- name of the region under the cursor --- */
@@ -789,12 +959,13 @@ function markCurrent(id){
 }
 
 /* --- panel --- */
-var sheet=document.getElementById('sheet'), body=document.getElementById('shBody');
+// the whole column scrolls, title block included; the text and pictures go into its content part
+var sheet=document.getElementById('sheet'), scroller=document.getElementById('shBody'), body=document.getElementById('shContent');
 var tabA=document.getElementById('tabArea'), tabC=document.getElementById('tabChars');
 var cur=null, curTab='area', ci=0;
-/* The panel shows either the recap of the session being read or a place. The switch at its top
-   exists only when some session has a recap written. */
-var mode='place';
+/* The panel has two views. The overview (nothing chosen) shows the session switch and the recap of the
+   session being read, or the introduction of the atlas when no session has a recap. A place shows only
+   itself. The session in force still decides what a place shows, but it is changed in the overview. */
 var HAS_RECAP=DATA.sessions.some(function(s){ return recapText(s); });
 function recapText(s){ return s && s.recap && String(s.recap).trim(); }
 /* A place's text, pictures and each character can be held back until a session. They are shown
@@ -805,7 +976,6 @@ function shownFrom(id){
   return true;
 }
 function visChars(p){ return (p.characters||[]).filter(function(c){ return shownFrom(c.from); }); }
-var modeBox=document.getElementById('shMode'), modeRecap=document.getElementById('modeRecap'), modePlace=document.getElementById('modePlace');
 // Below this width the panel is a bottom sheet that slides in; above it, a fixed column.
 var MOBILE=window.matchMedia('(max-width:760px)');
 
@@ -822,32 +992,30 @@ function prose(txt){
   return wrap;
 }
 function openPlace(p){
-  cur=p; curTab='area'; ci=0;
-  sheet.classList.add('open'); sheet.setAttribute('aria-hidden','false');
+  cur=p; curTab=p.isParty ? 'chars' : 'area'; ci=0;
+  revealSheet();
   renderPlace();
-}
-function setMode(m){
-  mode=m;
-  sheet.classList.toggle('mode-recap', m==='recap');
-  modeRecap.setAttribute('aria-selected', m==='recap'?'true':'false');
-  modePlace.setAttribute('aria-selected', m==='place'?'true':'false');
 }
 function renderPlace(){
   var p=cur;
-  if(!p){ showIntro(); return; }
-  setMode('place');
+  // a party is worked out again each time, so it follows the session being read
+  if(p && p.isParty){ p=partyPlace(p.party); cur=p; }
+  if(!p){ showDefault(); return; }
+  setView('place');
   var f=fac(p);
   document.getElementById('shKicker').innerHTML='';
   var k=document.getElementById('shKicker');
   var dot=document.createElement('i'); dot.style.background=col(p); k.appendChild(dot);
-  k.appendChild(document.createTextNode(p.isRegion ? 'Region' : (TYPES[p.type]||'Place')+(f?' · '+f.label:'')));
+  var n=p.characters.length;
+  k.appendChild(document.createTextNode(p.isParty ? 'Party · '+n+(n===1?' member':' members') : (p.isRegion ? 'Region' : (TYPES[p.type]||'Place')+(f?' · '+f.label:''))));
   document.getElementById('shTitle').textContent=p.name;
   var sum=document.getElementById('shSum');
   var sm=shownFrom(p.descFrom) ? p.summary : '';
   sum.textContent=sm||''; sum.style.display=sm?'':'none';
   var vc=visChars(p);
   if(curTab==='chars' && !vc.length) curTab='area';
-  tabC.textContent = vc.length ? 'Characters ('+vc.length+')' : 'Characters';
+  tabA.textContent = p.isParty ? 'Notes' : 'Area';
+  tabC.textContent = (p.isParty ? 'Members' : 'Characters') + (vc.length ? ' ('+vc.length+')' : '');
   tabC.disabled = vc.length===0;
   tabC.style.opacity = vc.length===0 ? .4 : 1;
   // a region has no characters, and a row with a single tab in it would only be clutter
@@ -855,41 +1023,63 @@ function renderPlace(){
   markCurrent(p.id);
   paint();
 }
-/* The recap of the session being read: its name, and what the table wrote down about it. */
-function showRecap(){
-  setMode('recap');
-  var s=DATA.sessions[SESSION];
-  document.getElementById('shKicker').textContent='Recap'+(DATA.sessions.length>1 ? ' \u00b7 '+(SESSION+1)+' of '+DATA.sessions.length : '');
-  document.getElementById('shTitle').textContent=s.label;
-  var sum=document.getElementById('shSum'); sum.textContent=''; sum.style.display='none';
-  tabA.parentNode.style.display='';
-  body.innerHTML=''; body.scrollTop=0;
-  if(recapText(s)) body.appendChild(prose(s.recap));
-  else { var n=document.createElement('p'); n.className='none'; n.textContent='Nothing has been written about this session yet.'; body.appendChild(n); }
+/* Which of the two views the panel is in, and which of its top controls go with it. */
+function setView(v){
+  sheet.classList.toggle('view-default', v==='default');
+  sheet.classList.toggle('view-place', v==='place');
+  // the top row is empty in the overview of an atlas with a single session, and then it is left out
+  document.getElementById('shTop').hidden = (v==='default' && DATA.sessions.length<2);
 }
-function refreshRecap(){ if(HAS_RECAP && mode==='recap') showRecap(); }
-modeRecap.onclick=function(){ showRecap(); };
-modePlace.onclick=function(){ renderPlace(); };
-document.getElementById('recapBtn').onclick=function(){
-  showRecap(); sheet.classList.add('open'); sheet.setAttribute('aria-hidden','false');
-};
-/* The fixed panel is never blank: with nothing chosen it introduces the atlas and says what to do. */
-function showIntro(){
-  cur=null; markCurrent(''); setMode('place');
-  document.getElementById('shKicker').textContent='Atlas';
-  document.getElementById('shTitle').textContent=DATA.title||'';
-  var sum=document.getElementById('shSum');
-  sum.textContent=DATA.subtitle||''; sum.style.display=DATA.subtitle?'':'none';
+/* The overview: the recap of the session being read, or the introduction of the atlas when none has a recap. */
+function showDefault(){
+  cur=null; markCurrent(''); setView('default');
   tabA.parentNode.style.display='none';
-  body.innerHTML=''; body.scrollTop=0;
-  if(DATA.intro) body.appendChild(prose(DATA.intro));
+  body.innerHTML=''; scroller.scrollTop=0;
+  var kicker=document.getElementById('shKicker'), sum=document.getElementById('shSum');
+  if(HAS_RECAP && DATA.sessions.length){
+    var s=DATA.sessions[SESSION];
+    kicker.textContent='Recap'+(DATA.sessions.length>1 ? ' \u00b7 '+(SESSION+1)+' of '+DATA.sessions.length : '');
+    document.getElementById('shTitle').textContent=s.label;
+    sum.textContent=''; sum.style.display='none';
+    if(recapText(s)) body.appendChild(prose(s.recap));
+    else { var n=document.createElement('p'); n.className='none'; n.textContent='Nothing has been written about this session yet.'; body.appendChild(n); }
+  } else {
+    kicker.textContent='Atlas';
+    document.getElementById('shTitle').textContent=DATA.title||'';
+    sum.textContent=DATA.subtitle||''; sum.style.display=DATA.subtitle?'':'none';
+    if(DATA.intro) body.appendChild(prose(DATA.intro));
+  }
   var h=document.createElement('p'); h.className='hint';
   h.textContent=DATA.pois.length ? 'Select a place on the map to read about it here.' : 'This atlas has no places yet.';
   body.appendChild(h);
 }
+document.getElementById('recapBtn').onclick=function(){ showDefault(); revealSheet(); };
+document.getElementById('shBack').onclick=function(){ showDefault(); };
+/* On a phone the open panel is a step in the browser history, so the Back button closes it instead of
+   leaving the map. Where the history cannot be written (some browsers refuse it for a local file) the
+   panel simply opens and closes without it. */
+var historyOpen=false, ignorePop=false;
+function revealSheet(){
+  sheet.classList.add('open'); sheet.setAttribute('aria-hidden','false');
+  if(MOBILE.matches && !historyOpen){
+    try{ history.pushState({atlasPage:1},''); historyOpen=true; }catch(e){}
+  }
+}
+function hideSheet(){ sheet.classList.remove('open'); sheet.setAttribute('aria-hidden','true'); cur=null; markCurrent(''); }
+window.addEventListener('popstate',function(){
+  if(ignorePop){ ignorePop=false; return; }
+  if(historyOpen){ historyOpen=false; if(MOBILE.matches && sheet.classList.contains('open')) hideSheet(); }
+});
 function closeSheet(){
-  if(MOBILE.matches){ sheet.classList.remove('open'); sheet.setAttribute('aria-hidden','true'); cur=null; markCurrent(''); }
-  else if(mode==='place') showIntro();      // the recap stays; Esc has nothing to put away there
+  if(MOBILE.matches){
+    hideSheet();
+    if(historyOpen){
+      historyOpen=false; ignorePop=true;
+      try{ history.back(); }catch(e){ ignorePop=false; }
+      setTimeout(function(){ ignorePop=false; },400);
+    }
+  }
+  else if(cur) showDefault();               // from a place back to the overview; the overview has nothing to put away
 }
 function syncSheet(){
   // crossing the breakpoint changes what "closed" means
@@ -904,15 +1094,154 @@ tabC.onclick=function(){ if(cur&&visChars(cur).length){ curTab='chars'; paint();
 function paint(){
   tabA.setAttribute('aria-selected', curTab==='area'?'true':'false');
   tabC.setAttribute('aria-selected', curTab==='chars'?'true':'false');
-  body.innerHTML=''; body.scrollTop=0;
+  sheet.classList.toggle('view-chars', curTab==='chars');
+  body.innerHTML=''; scroller.scrollTop=0;
   if(!cur) return;
   if(curTab==='area'){
-    var pics=shownFrom(cur.imagesFrom) ? imagesOf(cur) : [];
-    if(pics.length) body.appendChild(gallery(pics, cur.name));
-    body.appendChild(prose(shownFrom(cur.descFrom) ? cur.description : ''));
+    if(cur.isParty){
+      if(cur.description) body.appendChild(prose(cur.description));
+      else { var nn=document.createElement('p'); nn.className='none'; nn.textContent='Nothing is recorded for this party in this session.'; body.appendChild(nn); }
+    } else {
+      var pics=shownFrom(cur.imagesFrom) ? imagesOf(cur) : [];
+      if(pics.length) body.appendChild(gallery(pics, cur.name));
+      body.appendChild(prose(shownFrom(cur.descFrom) ? cur.description : ''));
+    }
   } else {
     body.appendChild(carousel(visChars(cur)));
   }
+}
+/* Is this picture animated? A GIF has more than one frame, an animated WebP says so in its VP8X flags,
+   an APNG has an acTL chunk before its image data. Read from the first bytes, not from the pixels. */
+function animatedKind(b){
+  var i, n, t;
+  if(b.length>13 && b[0]===71 && b[1]===73 && b[2]===70){                       // "GIF"
+    i=13; if(b[10]&128) i+=3*(1<<((b[10]&7)+1));
+    n=0;
+    while(i<b.length){
+      t=b[i++];
+      if(t===59) break;
+      if(t===33){ i++; while(i<b.length && b[i]!==0) i+=b[i]+1; i++; }
+      else if(t===44){
+        n++; if(n>1) return 'gif';
+        var lf=b[i+8]; i+=9; if(lf&128) i+=3*(1<<((lf&7)+1));
+        i++; while(i<b.length && b[i]!==0) i+=b[i]+1; i++;
+      } else break;
+    }
+    return '';
+  }
+  if(b.length>21 && b[0]===82 && b[1]===73 && b[2]===70 && b[3]===70 && b[8]===87 && b[9]===69 && b[10]===66 && b[11]===80){   // RIFF....WEBP
+    return (b[12]===86 && b[13]===80 && b[14]===56 && b[15]===88 && (b[20]&2)) ? 'webp' : '';
+  }
+  if(b.length>16 && b[0]===137 && b[1]===80 && b[2]===78 && b[3]===71){          // PNG
+    i=8;
+    while(i+8<=b.length){
+      var len=((b[i]<<24)|(b[i+1]<<16)|(b[i+2]<<8)|b[i+3])>>>0, ty=String.fromCharCode(b[i+4],b[i+5],b[i+6],b[i+7]);
+      if(ty==='acTL') return 'apng';
+      if(ty==='IDAT') return '';
+      i+=12+len;
+    }
+  }
+  return '';
+}
+/* For a reader who has asked the system for less motion, an animated picture shows its first frame:
+   it is drawn once onto a canvas and swapped in as a still. The full-screen view still plays it, since
+   that was asked for with a click. */
+var CALM=!!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function stillIfCalm(im){
+  if(!CALM) return im;
+  var uri=im.getAttribute('src')||'';
+  if(!/^data:image\/(gif|webp|png)/.test(uri)) return im;
+  try{
+    var cut=uri.indexOf(',')+1, gif=uri.indexOf('data:image/gif')===0;
+    var b64=uri.slice(cut, gif ? undefined : cut+87384);
+    var raw=atob(b64.slice(0,b64.length-b64.length%4)), arr=new Uint8Array(raw.length);
+    for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+    if(!animatedKind(arr)) return im;
+  }catch(e){ return im; }
+  var done=false;
+  im.addEventListener('load',function(){
+    if(done) return; done=true;
+    try{
+      var c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
+      c.getContext('2d').drawImage(im,0,0);
+      im.src=c.toDataURL('image/png');
+    }catch(e){}
+  });
+  return im;
+}
+/* A video is a silent loop. It is made into a Blob and shown from its address, not from the long text
+   itself, which some phones refuse to play. It plays only while it is on screen (a carousel keeps the
+   other portraits out of view), and a reader who asked for less motion gets its first frame. */
+function isVideoSrc(s){ return typeof s==='string' && s.indexOf('data:video/')===0; }
+var blobs={};
+function blobUrl(uri){
+  if(blobs[uri]) return blobs[uri];
+  var raw=atob(uri.slice(uri.indexOf(',')+1)), arr=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return (blobs[uri]=URL.createObjectURL(new Blob([arr],{type:uri.slice(5,uri.indexOf(';'))})));
+}
+var watcher=window.IntersectionObserver ? new IntersectionObserver(function(list){
+  list.forEach(function(en){
+    var v=en.target;
+    if(en.isIntersecting && !CALM){ var p=v.play(); if(p && p.catch) p.catch(function(){}); } else v.pause();
+  });
+},{threshold:.2}) : null;
+function mediaEl(src, alt){
+  if(!isVideoSrc(src)){ var im=new Image(); im.src=src; im.alt=alt||''; return stillIfCalm(im); }
+  var v=document.createElement('video');
+  v.muted=true; v.loop=true; v.playsInline=true; v.preload='auto';
+  v.setAttribute('muted',''); v.setAttribute('playsinline','');
+  v.setAttribute('role','img'); v.setAttribute('aria-label',alt||'');
+  v.disablePictureInPicture=true;
+  v.src=blobUrl(src);
+  if(CALM) v.addEventListener('loadeddata',function(){ try{ v.currentTime=.01; }catch(e){} });
+  if(watcher) watcher.observe(v); else if(!CALM) v.autoplay=true;
+  return v;
+}
+/* A picture opens full screen on a click, whole and in colour, with the arrow keys or buttons to move
+   between the pictures of the same place. Escape closes it without also closing the panel. */
+function openLightbox(list, i, caption){
+  var at=i||0, opener=document.activeElement;
+  var ov=document.createElement('div'), im=new Image(), vid=document.createElement('video'), cap=document.createElement('div');
+  vid.muted=true; vid.loop=true; vid.playsInline=true; vid.controls=true; vid.setAttribute('playsinline','');
+  ov.className='lightbox'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
+  ov.setAttribute('aria-label', caption||'Picture');
+  im.alt=caption||''; cap.className='lb-cap';
+  function mk(cls, label, txt, fn){
+    var b=document.createElement('button');
+    b.className='lb-btn '+cls; b.setAttribute('aria-label',label); b.textContent=txt;
+    b.onclick=function(e){ e.stopPropagation(); fn(); };
+    return b;
+  }
+  function show(){
+    at=Math.max(0,Math.min(list.length-1,at));
+    if(isVideoSrc(list[at])){
+      im.style.display='none'; vid.style.display=''; vid.src=blobUrl(list[at]); var pp=vid.play(); if(pp && pp.catch) pp.catch(function(){});
+    } else { vid.pause(); vid.style.display='none'; im.style.display=''; im.src=list[at]; }
+    cap.textContent=(caption||'')+(list.length>1 ? '  \u00b7  '+(at+1)+' / '+list.length : '');
+    prev.disabled=at===0; next.disabled=at===list.length-1;
+  }
+  function close(){
+    document.removeEventListener('keydown',key,true);
+    vid.pause();
+    if(ov.parentNode) ov.parentNode.removeChild(ov);
+    if(opener && opener.focus) opener.focus();
+  }
+  function key(e){
+    if(e.key==='Escape'){ e.stopPropagation(); e.preventDefault(); close(); }
+    else if(list.length>1 && (e.key==='ArrowRight' || e.key==='ArrowLeft')){
+      e.stopPropagation(); e.preventDefault(); at+=e.key==='ArrowRight' ? 1 : -1; show();
+    }
+  }
+  var closeBtn=mk('lb-close','Close','\u00d7',close);
+  var prev=mk('lb-prev','Previous picture','\u2039',function(){ at--; show(); });
+  var next=mk('lb-next','Next picture','\u203a',function(){ at++; show(); });
+  ov.appendChild(im); ov.appendChild(vid); ov.appendChild(cap); ov.appendChild(closeBtn);
+  if(list.length>1){ ov.appendChild(prev); ov.appendChild(next); }
+  ov.addEventListener('click',function(e){ if(e.target!==im && e.target!==vid) close(); });
+  document.addEventListener('keydown',key,true);
+  document.body.appendChild(ov);
+  show(); closeBtn.focus();
 }
 /* A place may carry several pictures; a region, or a place saved before that, carries one. */
 function imagesOf(p){ return (p.images && p.images.length) ? p.images : (p.image ? [p.image] : []); }
@@ -921,17 +1250,21 @@ function imagesOf(p){ return (p.images && p.images.length) ? p.images : (p.image
    nothing is cut: a picture of another shape is shown whole inside the frame. */
 function gallery(list, name){
   if(list.length===1){
-    var one=new Image(); one.className='area'; one.src=list[0]; one.alt=name; return one;
+    var one=mediaEl(list[0], name); one.className='area';
+    one.onclick=function(){ openLightbox(list,0,name); };
+    return one;
   }
   var root=document.createElement('div'); root.className='gal';
   var win=document.createElement('div'); win.className='gal-win';
   var track=document.createElement('div'); track.className='track';
   list.forEach(function(src,i){
     var s=document.createElement('div'); s.className='gal-slide';
-    var im=new Image(); im.src=src; im.alt=name+', picture '+(i+1)+' of '+list.length;
-    if(i===0) im.onload=function(){
-      if(im.naturalWidth) win.style.aspectRatio=im.naturalWidth+' / '+im.naturalHeight;
-    };
+    var im=mediaEl(src, name+', picture '+(i+1)+' of '+list.length);
+    im.onclick=function(){ if(win.dataset.sw==='1') return; openLightbox(list,i,name); };
+    if(i===0){
+      im.onload=function(){ if(im.naturalWidth) win.style.aspectRatio=im.naturalWidth+' / '+im.naturalHeight; };
+      im.onloadedmetadata=function(){ if(im.videoWidth) win.style.aspectRatio=im.videoWidth+' / '+im.videoHeight; };
+    }
     s.appendChild(im); track.appendChild(s);
   });
   win.appendChild(track); root.appendChild(win);
@@ -960,7 +1293,7 @@ function gallery(list, name){
   win.addEventListener('pointerup',function(e){
     if(!sw) return;
     var d=e.clientX-sw.x;
-    if(Math.abs(d)>45){ at += d<0?1:-1; upd(); }
+    if(Math.abs(d)>45){ at += d<0?1:-1; upd(); win.dataset.sw='1'; setTimeout(function(){ win.dataset.sw=''; },0); }
     sw=null;
   });
   upd();
@@ -972,7 +1305,11 @@ function carousel(list){
   var track=document.createElement('div'); track.className='track';
   list.forEach(function(c){
     var s=document.createElement('div'); s.className='slide';
-    if(c.image){ var im=new Image(); im.src=c.image; im.alt=c.name; s.appendChild(im); }
+    if(c.image){
+      var im=mediaEl(c.image, c.name);
+      im.onclick=function(){ if(win.dataset.sw==='1') return; openLightbox([c.image],0,c.name); };
+      s.appendChild(im);
+    }
     else { var ph=document.createElement('div'); ph.className='ph'; ph.textContent='no portrait'; s.appendChild(ph); }
     var h=document.createElement('h4'); h.textContent=c.name||'Unnamed'; s.appendChild(h);
     if(c.role){ var r=document.createElement('p'); r.className='role'; r.textContent=c.role; s.appendChild(r); }
@@ -1004,7 +1341,7 @@ function carousel(list){
   win.addEventListener('pointerup',function(e){
     if(!sw) return;
     var d=e.clientX-sw.x;
-    if(Math.abs(d)>45){ ci += d<0?1:-1; upd(); }
+    if(Math.abs(d)>45){ ci += d<0?1:-1; upd(); win.dataset.sw='1'; setTimeout(function(){ win.dataset.sw=''; },0); }
     sw=null;
   });
   root.carUpd=upd;
@@ -1020,12 +1357,12 @@ document.addEventListener('keydown',function(e){
   if(e.key==='ArrowLeft'){ ci--; c.carUpd(); }
 });
 
-modeBox.hidden=!HAS_RECAP;
 document.getElementById('shSess').hidden=DATA.sessions.length<2;
-document.getElementById('shTop').hidden=!(HAS_RECAP||DATA.sessions.length>1);
-if(HAS_RECAP) document.body.classList.add('has-recap');
+if(HAS_RECAP || DATA.sessions.length>1) document.body.classList.add('has-sessions');
+// on a phone the header button opens the overview; "Sessions" when there is a switch but no recap to read
+document.getElementById('recapBtn').textContent = HAS_RECAP ? 'Session recap' : 'Sessions';
 syncSheet();
-if(!MOBILE.matches){ if(HAS_RECAP) showRecap(); else showIntro(); }
+if(!MOBILE.matches) showDefault();
 
 /* --- legend + about the atlas --- */
 (function(){
@@ -1415,8 +1752,8 @@ function drawSessions(){
     document.getElementById('sessCount').textContent=(SESSION+1)+' / '+DATA.sessions.length;
     document.getElementById('sessPrev').disabled=SESSION===0;
     document.getElementById('sessNext').disabled=SESSION===DATA.sessions.length-1;
-    refreshRecap();
-    if(mode==='place' && cur) renderPlace();
+    updateParties();
+    if(cur) renderPlace(); else showDefault();
   }
   function go(i){
     SESSION=Math.max(0,Math.min(DATA.sessions.length-1,i));

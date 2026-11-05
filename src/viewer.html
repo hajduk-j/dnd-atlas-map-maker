@@ -133,9 +133,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 .boundaries polyline{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
 .boundaries .halo{stroke:rgba(0,0,0,.4);stroke-width:4.8px}
 .boundaries .line{stroke-width:2.3px}
-/* region areas: invisible, they exist only so the map knows which region you are over */
+/* region areas: invisible unless the region asks to be shown; either way they let the map know which
+   region you are over. A shown area is a wash of the region's colour inside a fine line of it, over a
+   dark under-line that keeps it readable on pale ground, and it comes in with the places. */
 .areas{position:absolute;top:0;left:0;overflow:visible}
 .areas polygon{fill:transparent;stroke:none;pointer-events:fill}
+.areas.shown{opacity:var(--pins,1)}
+.areas polygon.halo{fill:none;stroke:rgba(20,12,4,.4);stroke-width:5px;vector-effect:non-scaling-stroke;
+  stroke-linejoin:round;pointer-events:none}
+.areas polygon.vis{fill:var(--ac);fill-opacity:.15;stroke:var(--ac);stroke-width:2px;vector-effect:non-scaling-stroke;
+  stroke-linejoin:round;transition:fill-opacity .25s}
+.areas polygon.vis:hover,.areas polygon.vis.hot{fill-opacity:.28}
 
 /* what the cursor is over right now */
 .rgn{position:fixed;left:16px;bottom:16px;z-index:20;display:flex;align-items:center;gap:9px;
@@ -459,7 +467,7 @@ function published(p){
     factions:(p.factions||[]).map(function(f){
       var pinned = !!f.anchor;
       return {id:f.id, label:f.label, color:f.color,
-        area:(f.area&&f.area.length>2)?f.area:null, anchor:f.anchor||null,
+        area:(f.area&&f.area.length>2)?f.area:null, areaVisible:!!(f.areaVisible&&f.area&&f.area.length>2), anchor:f.anchor||null,
         summary:pinned?f.summary:'', description:pinned?f.description:'',
         image:pinned?f.image:null, characters:[]};
     }),
@@ -694,15 +702,25 @@ function drawAreas(){
   svg.setAttribute('class','areas');
   svg.setAttribute('width',DATA.map.w); svg.setAttribute('height',DATA.map.h);
   svg.setAttribute('viewBox','0 0 '+DATA.map.w+' '+DATA.map.h);
+  var any=false;
   list.forEach(function(f){
-    var pg=document.createElementNS(NS,'polygon');
-    pg.setAttribute('points', f.area.map(function(pt){
+    var pts=f.area.map(function(pt){
       return (pt[0]*DATA.map.w).toFixed(1)+','+(pt[1]*DATA.map.h).toFixed(1);
-    }).join(' '));
+    }).join(' ');
+    if(f.areaVisible){
+      any=true;
+      var halo=document.createElementNS(NS,'polygon');
+      halo.setAttribute('class','halo'); halo.setAttribute('points',pts);
+      svg.appendChild(halo);
+    }
+    var pg=document.createElementNS(NS,'polygon');
+    pg.setAttribute('points', pts);
+    if(f.areaVisible){ pg.setAttribute('class','vis'); pg.style.setProperty('--ac', lineCol(f.color)); }
     pg.addEventListener('pointerenter',function(e){ showRegion(f, e.pointerType!=='mouse'); });
     pg.addEventListener('pointerleave',function(){ hideRegion(f); });
     svg.appendChild(pg);
   });
+  if(any) svg.setAttribute('class','areas shown');
   cv.appendChild(svg);
 }
 function drawBoundaries(){

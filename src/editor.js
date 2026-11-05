@@ -94,6 +94,7 @@ function newRegion(label, color){
   return {
     id:uid(), label:label, color:color,
     area:null,                      // [[x,y],…] relative polygon coordinates
+    areaVisible:false,              // draw the polygon on the finished map; off keeps it for hover only
     anchor:null,                    // {x,y} where the big pin sits
     summary:"", description:"", image:null, characters:[]
   };
@@ -480,7 +481,7 @@ function frameHtml(w,h){
 }
 
 /* Areas are drawn from relative coordinates converted to map pixels, so they
-   pan and zoom together with the base image. In the export they are invisible. */
+   pan and zoom together with the base image. In the export they are invisible unless the region asks to be shown. */
 function ptsOf(list){
   return list.map(function(pt){
     return (pt[0]*S.map.w).toFixed(1)+","+(pt[1]*S.map.h).toFixed(1);
@@ -865,7 +866,7 @@ function renderRegionInspector(host, f){
   var areaBox = el("div","field");
   areaBox.appendChild(el("label",null,"Area borders"));
   areaBox.appendChild(el("p","sub", hasArea(f)
-    ? "The polygon has "+f.area.length+" vertices. On the finished map it is invisible — it is there only so that hovering shows the region's name."
+    ? "The polygon has "+f.area.length+" vertices. By default it is invisible on the finished map and only lets hovering show the region's name; tick the box below to draw it."
     : "No borders yet. A faction can exist without them."));
   var areaActs = el("div","char-actions"); areaActs.style.justifyContent="flex-start";
   var drawBtn = el("button","mini", hasArea(f) ? "Redraw area" : "Draw area");
@@ -880,6 +881,13 @@ function renderRegionInspector(host, f){
     areaActs.appendChild(clr);
   }
   areaBox.appendChild(areaActs);
+  if(hasArea(f)){
+    var vis = el("label","check");
+    var vcb = document.createElement("input"); vcb.type="checkbox"; vcb.checked=!!f.areaVisible;
+    vcb.onchange=function(){ f.areaVisible=vcb.checked; persist(); };
+    vis.appendChild(vcb); vis.appendChild(document.createTextNode("Show this area on the finished map"));
+    areaBox.appendChild(vis);
+  }
   host.appendChild(areaBox);
 
   /* --- big pin --- */
@@ -965,7 +973,7 @@ document.getElementById("btnSettings").onclick = function(){
         var held = heldFrom(s.id);
         var nm = input(s.label, function(v){ s.label=v; persist(); });
         var tag = el("span","tag", held ? held+(held===1?" thing appears here":" things appear here") : "");
-        var rm = el("button","mini del","×");
+        var rm = el("button","mini del x","×");
         rm.onclick=function(){
           var gone=S.sessions[i].id;
           S.sessions.splice(i,1);
@@ -1008,9 +1016,17 @@ document.getElementById("btnSettings").onclick = function(){
         if(hasArea(f)) bits.push("area");
         if(f.anchor) bits.push("big pin");
         var tag = el("span","tag", bits.length ? bits.join(" · ") : "no territory");
+        var show = null;
+        if(hasArea(f)){
+          show = el("label","check mini-check");
+          show.title = "Show this area on the finished map";
+          var scb = document.createElement("input"); scb.type="checkbox"; scb.checked=!!f.areaVisible;
+          scb.onchange=function(){ f.areaVisible=scb.checked; persist(); };
+          show.appendChild(scb); show.appendChild(document.createTextNode("Show"));
+        }
         var edit = el("button","mini","Edit");
         edit.onclick=function(){ selectRegion(f.id); close(); renderAll(); };
-        var rm = el("button","mini del","×");
+        var rm = el("button","mini del x","×");
         rm.onclick=function(){
           if(S.factions.length<=1) return toast("At least one faction has to stay.");
           var gone=f.id; S.factions.splice(i,1);
@@ -1019,6 +1035,7 @@ document.getElementById("btnSettings").onclick = function(){
           paintFacs(); renderAll(); persist();
         };
         row.appendChild(col); row.appendChild(nm); row.appendChild(tag);
+        if(show) row.appendChild(show);
         row.appendChild(edit); row.appendChild(rm);
         list.appendChild(row);
       });
@@ -1054,7 +1071,7 @@ document.getElementById("btnSettings").onclick = function(){
         };
         var clr = el("button","mini","Clear");
         clr.onclick=function(){ b.paths=[]; paintBounds(); refreshAreas(); persist(); };
-        var rm = el("button","mini del","×");
+        var rm = el("button","mini del x","×");
         rm.onclick=function(){ S.boundaries.splice(i,1); paintBounds(); refreshAreas(); persist(); };
         row.appendChild(col); row.appendChild(nm); row.appendChild(st); row.appendChild(tag);
         row.appendChild(draw); if(n) row.appendChild(clr); row.appendChild(rm);
@@ -1203,6 +1220,7 @@ function normalize(d){
       return {
         id:f.id||uid(), label:f.label||"Region", color:f.color||"#4e8f7e",
         area:(f.area && f.area.length>2) ? f.area.map(function(pt){ return [+pt[0]||0, +pt[1]||0]; }) : null,
+        areaVisible:!!f.areaVisible,
         anchor:f.anchor ? {x:+f.anchor.x||0, y:+f.anchor.y||0} : null,
         summary:f.summary||"", description:f.description||"", image:f.image||null,
         characters:(f.characters||[]).map(normChar)

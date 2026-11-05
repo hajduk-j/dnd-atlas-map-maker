@@ -59,8 +59,10 @@ In **Map settings**, press **Edit** next to a region; the right-hand panel then 
 
 - **draw an area** — by clicking vertices. Enter or a click on the first vertex closes the
   polygon, Backspace takes the last vertex back, Esc cancels the drawing. On the finished map
-  the polygon is **invisible** — it is there only so that hovering shows the region's name in
-  the corner;
+  the polygon is **invisible** by default — it is there only so that hovering shows the region's name in
+  the corner. Tick **Show this area on the finished map** (in the panel, or **Show** in the region's
+  row in Map settings) and it is drawn as a soft wash of the region's color inside a fine line of
+  it, fading in with the places as the reader zooms in;
 - **place a big pin** — the region's name lettered across the map in spaced capitals, with a
   faint glow in the region's color and no marker under it. Clicking it opens a panel with the
   region's description and image. Characters belong to places, so a region has none. Without
@@ -208,6 +210,7 @@ One project is one JSON object:
     "label": "The Borderlands",
     "color": "#3b6ea5",
     "area": [[0.11,0.2],[0.44,0.17],[0.4,0.52]],   // optional polygon, relative coordinates
+    "areaVisible": true,                           // optional: draw the polygon on the finished map
     "anchor": { "x": 0.28, "y": 0.31 },            // optional big pin
     "summary": "A wild strip between the rivers.", // the big pin's panel
     "description": "Paragraphs are separated by a blank line.",

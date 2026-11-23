@@ -50,6 +50,7 @@ function blank(){
     boundaries:[],                  // lines drawn over the map: [{id,label,color,style,paths:[[[x,y],…],…]}]
     players:[],                     // the people at the table: [{id,name,role,description,image}]
     parties:[],                     // groups that travel the map: [{id,label,color,steps:{sessionId|"base":{x,y,members,note,gone}}}]
+    ui:"classic",                   // the look of the editor and of the finished site: "classic" (brass, parchment) or "arcane" (night glass)
     background:"magic",             // behind the map in the finished site: "magic", "snow" or "mist"
     titleImage:null,                // artwork shown above the map when the view is pulled back
     // Sessions are the atlas read at different moments of the campaign. The map is the same in
@@ -96,7 +97,7 @@ function heldFrom(id){
    a party that nobody moves stays put, and a split is simply a second party that starts in the session
    where the group divides. "base" is the step used before any session exists. */
 var PARTY_COLORS = ["#5b8fd6","#d9825b","#7fb86a","#c58ad8","#e0c25a","#59b8b0"];
-function newPlayer(){ return {id:uid(), name:"New player", role:"", description:"", image:null}; }
+function newPlayer(){ return {id:uid(), name:"New player", race:"", "class":"", background:"", description:"", image:null}; }
 function newParty(label, color){ return {id:uid(), label:label, color:color, steps:{}}; }
 function sessKey(i){ return (i<0 || !S.sessions[i]) ? "base" : S.sessions[i].id; }
 function partyState(pt, idx){
@@ -403,8 +404,15 @@ function clampView(){
   view.x = w <= r.width  ? (r.width-w)/2  : Math.min(0, Math.max(r.width-w,  view.x));
   view.y = h <= r.height ? (r.height-h)/2 : Math.min(0, Math.max(r.height-h, view.y));
 }
+/* the status plate on the stage: how far in the map is (100% is the whole map on screen), where the pointer is
+   on the map in the 0-1 coordinates a point is stored in, and how many points there are */
+var stZoom = document.getElementById("stZoom"), stPos = document.getElementById("stPos"), stCount = document.getElementById("stCount");
+function showZoomStatus(){
+  if(S && S.map) stZoom.textContent = Math.round(view.z/fitZoom()*100) + "%";
+}
 function applyView(){
   clampView();
+  showZoomStatus();
   cv.style.transform = "translate("+view.x+"px,"+view.y+"px) scale("+view.z+")";
   cv.style.setProperty("--inv", 1/view.z);
   // vertices of the polygon being drawn stay the same size at every zoom level
@@ -445,6 +453,14 @@ vp.addEventListener("wheel", function(e){
   e.preventDefault();
   zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1/1.15);
 }, {passive:false});
+
+vp.addEventListener("pointermove", function(e){
+  if(!S.map) return;
+  var r = vp.getBoundingClientRect();
+  var x = (e.clientX-r.left-view.x)/(S.map.w*view.z), y = (e.clientY-r.top-view.y)/(S.map.h*view.z);
+  stPos.textContent = (x>=0 && x<=1 && y>=0 && y<=1) ? x.toFixed(3)+", "+y.toFixed(3) : "\u2013";
+});
+vp.addEventListener("pointerleave", function(){ stPos.textContent = "\u2013"; });
 
 var panning=null, panMoved=false;
 vp.addEventListener("pointerdown", function(e){
@@ -580,6 +596,7 @@ function renderMap(){
   var dz = document.getElementById("dropzone");
   dz.classList.toggle("hidden", !!S.map);
   document.getElementById("zoombar").classList.toggle("hidden", !S.map);
+  document.getElementById("statBar").classList.toggle("hidden", !S.map);
   cv.innerHTML = "";
   if(!S.map) return;
   cv.style.width = S.map.w+"px";
@@ -789,6 +806,7 @@ function renderList(){
   var ul = document.getElementById("poiList");
   ul.innerHTML="";
   document.getElementById("poiCount").textContent = S.pois.length ? S.pois.length : "";
+  stCount.textContent = S.pois.length;
   document.getElementById("poiEmpty").classList.toggle("hidden", S.pois.length>0);
   S.pois.forEach(function(p){
     var li = document.createElement("li");
@@ -1108,7 +1126,11 @@ function renderRegionInspector(host, f){
   host.appendChild(wrap);
 }
 
-function renderAll(){ renderSessions(); renderMap(); renderList(); renderInspector(); }
+/* The look is a data attribute on the page: the style sheet swaps its colours and ornaments on it. */
+function applyUi(){
+  document.documentElement.setAttribute("data-ui", (S && S.ui==="arcane") ? "arcane" : "classic");
+}
+function renderAll(){ applyUi(); renderSessions(); renderMap(); renderList(); renderInspector(); }
 
 /* ============================ session being edited ============================ */
 var sessBar = document.getElementById("sessBar");
@@ -1153,6 +1175,14 @@ function modal(build, wide){
 document.getElementById("btnSettings").onclick = function(){
   modal(function(sheet, close){
     sheet.appendChild(el("h3",null,"Map settings"));
+    var uiSel = el("select","inp");
+    [["classic","Classic: brass and parchment"],["arcane","Arcane: night glass and starlight"]].forEach(function(o){
+      var op = el("option",null,o[1]); op.value=o[0]; uiSel.appendChild(op);
+    });
+    uiSel.value = S.ui==="arcane" ? "arcane" : "classic";
+    uiSel.onchange = function(){ S.ui=uiSel.value; applyUi(); persist(); };
+    sheet.appendChild(field("Interface style", uiSel));
+    sheet.appendChild(el("p","sub","The look of the editor and of the exported map: the frames, plates and colours of its controls. Classic is charcoal metal and parchment; arcane is dark glass with fine silver lines and a night sky behind the map."));
     sheet.appendChild(el("p","sub","This appears in the header of the exported site."));
     sheet.appendChild(field("Atlas name", input(S.title, function(v){ S.title=v; persist(); })));
     sheet.appendChild(field("Subtitle", input(S.subtitle, function(v){ S.subtitle=v; persist(); }, "e.g. The Confluence, winter 1247")));
@@ -1293,7 +1323,7 @@ document.getElementById("btnSettings").onclick = function(){
     sheet.appendChild(blist);
 
     sheet.appendChild(el("h3",null,"Players"));
-    sheet.appendChild(el("p","sub","The people at your table: a profile each, with a portrait. Put them into parties below, and readers meet them by clicking a party on the finished map."));
+    sheet.appendChild(el("p","sub","The people at your table: a profile each, with a portrait. On the finished map, pulled all the way back, they float as portraits at the foot of the map, and a click opens the profile. Put them into parties below to move them across the map."));
     var pllist = el("div");
     function paintPlayers(){
       pllist.innerHTML="";
@@ -1303,7 +1333,9 @@ document.getElementById("btnSettings").onclick = function(){
         top.appendChild(imagePicker(pl.image, function(v){ pl.image=v; persist(); }, "portrait", 700, true));
         var fields = el("div","fields");
         fields.appendChild(input(pl.name, function(v){ pl.name=v; persist(); }, "Name"));
-        fields.appendChild(input(pl.role, function(v){ pl.role=v; persist(); }, "Class, e.g. half-elf ranger"));
+        fields.appendChild(input(pl.race, function(v){ pl.race=v; persist(); }, "Race, e.g. half-elf"));
+        fields.appendChild(input(pl["class"], function(v){ pl["class"]=v; persist(); }, "Class, e.g. ranger"));
+        fields.appendChild(input(pl.background, function(v){ pl.background=v; persist(); }, "Background, e.g. outlander"));
         top.appendChild(fields);
         box.appendChild(top);
         box.appendChild(textarea(pl.description, function(v){ pl.description=v; persist(); }, "Who they are, where they come from, what they want.", 3));
@@ -1420,7 +1452,7 @@ document.getElementById("btnSettings").onclick = function(){
     fr.appendChild(document.createTextNode("Engrave a border onto the map"));
     sheet.appendChild(fr);
     var bgSel = document.createElement("select"); bgSel.className="inp";
-    [["magic","Magic motes"],["snow","Snow, with a little wind"],["mist","Mist, drifting slowly"]].forEach(function(o){
+    [["magic","Magic motes"],["snow","Blizzard, driven by the wind"],["mist","Mist, drifting slowly"]].forEach(function(o){
       var op = document.createElement("option"); op.value=o[0]; op.textContent=o[1]; bgSel.appendChild(op);
     });
     bgSel.value = S.background || "magic";
@@ -1532,6 +1564,7 @@ function normalize(d){
       paths:raw.map(cleanPath).filter(Boolean)};
   });
   b.background = (d.background==="snow" || d.background==="mist") ? d.background : "magic";
+  b.ui = d.ui==="arcane" ? "arcane" : "classic";
   b.titleImage = d.titleImage || null;
   // older projects have factions without territory — fill in empty fields, not invented ones
   if(d.factions && d.factions.length){
@@ -1552,7 +1585,10 @@ function normalize(d){
   var known = {};
   b.sessions.forEach(function(s){ known[s.id]=1; });
   b.players = (d.players||[]).map(function(p){
-    return {id:p.id||uid(), name:p.name||"", role:p.role||"", description:p.description||"", image:p.image||null};
+    // an earlier version kept race and class together in one free "role" line; it becomes the class
+    var legacy = (!p.race && !p["class"]) ? (p.role||"") : "";
+    return {id:p.id||uid(), name:p.name||"", race:p.race||"", "class":p["class"]||legacy,
+      background:p.background||"", description:p.description||"", image:p.image||null};
   });
   var pids = {};
   b.players.forEach(function(p){ pids[p.id]=1; });
@@ -1739,33 +1775,103 @@ document.getElementById("btnExport").onclick = function(){
 /* ============================ quick tour ============================ */
 /* A short walk through the editor, shown once to someone who opens it with nothing saved,
    and again whenever "Quick tour" is pressed. */
+/* ============================ what's new ============================ */
+/* One entry per batch of changes, newest first, written for the person who makes maps: what they can now do,
+   in short sentences. The id is the date. Keep this list up to date with every commit, and look at TOUR_STEPS
+   as well, in case a change belongs in the tour. The editor remembers the newest id a person has seen and
+   opens this window once when a newer one has arrived. */
+var CHANGELOG = [
+  { id:"2026-11-23", title:"The map moves to the middle as you zoom in",
+    items:["When the player heroes leave as you zoom in, the finished map now moves back to the middle of the screen instead of staying to one side.",
+           "Dragging the finished map always responds: past an edge, or sideways while the map is narrower than the screen, it gives a little and springs back when you let go."] },
+  { id:"2026-11-10", title:"Arcane look, player heroes and a status bar",
+    items:["Map settings now starts with Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",
+           "Player heroes: pulled all the way back, the finished map shows your players in a frame beside it, each with a portrait, name, race and class. A click opens the profile, and the frame leaves as you zoom in. On a phone held upright it hangs under the map, so the map keeps the whole width.",
+           "Players now have race, class and background, and a short sheet in their profile.",
+           "A status plate on the editor's stage shows the zoom, the pointer position on the map and the number of points.",
+           "New plates, corner ornaments and a darker edge round the map, in the editor and in the export.",
+           "The title artwork is larger on the finished map.",
+           "This window: it opens when something new has arrived, and you can reopen it from What's new."] },
+  { id:"2026-11-05", title:"Players and parties, animated pictures and video",
+    items:["Parties travel from session to session with a dotted trail, and can split into two.",
+           "Portraits and place pictures can be animated (GIF, animated WebP, APNG) or short silent videos (MP4, WebM).",
+           "On a phone a profile reads from the top down, and the side panel is a full page with a Map button.",
+           "The side panel keeps the session switch and recap in the overview, and is only about the place once you choose one.",
+           "Region areas can be drawn on the finished map: tick Show this area on the finished map."] },
+  { id:"2026-11-02", title:"A new look for the editor",
+    items:["Warm charcoal and parchment, an oak top bar, icon zoom buttons, and a finished map in the same style."] }
+];
+function newsSeen(){ try{ return localStorage.getItem("atlas.news") || ""; }catch(e){ return ""; } }
+function newsMark(){ try{ localStorage.setItem("atlas.news", CHANGELOG[0].id); }catch(e){} }
+var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function prettyDate(id){
+  var p = id.split("-");
+  return p.length===3 ? (+p[2])+" "+MONTHS[(+p[1])-1]+" "+p[0] : id;
+}
+// the entries newer than the one last seen (at most three), or the three newest when asked for by hand
+function openNews(onlyNew){
+  var seen = onlyNew ? newsSeen() : "";
+  var list = CHANGELOG.filter(function(c){ return c.id > seen; }).slice(0, 3);
+  if(!list.length) list = CHANGELOG.slice(0, 1);
+  modal(function(sheet, close){
+    sheet.classList.add("tour","news");
+    sheet.appendChild(el("h3", null, "What's new"));
+    list.forEach(function(c){
+      var box = el("div","news-entry");
+      box.appendChild(el("div","tour-step", prettyDate(c.id)));
+      box.appendChild(el("div","news-title", c.title));
+      var ul = el("ul","tour-list");
+      c.items.forEach(function(t){ ul.appendChild(el("li", null, t)); });
+      box.appendChild(ul);
+      sheet.appendChild(box);
+    });
+    var acts = el("div","sheet-actions");
+    var ok = el("button","tbtn primary","Close");
+    ok.onclick = function(){ newsMark(); close(); };
+    acts.appendChild(ok);
+    sheet.appendChild(acts);
+    ok.focus({preventScroll:true});   // the window opens at its top, not scrolled down to the button
+  });
+  newsMark();
+}
+document.getElementById("btnNews").onclick = function(){ openNews(false); };
+
 var TOUR_STEPS = [
   { title:"Make an interactive map",
-    text:"Atlas turns a map image into a page you can share: places to click, the people who live there, regions, and a timeline of your campaign.",
+    text:"Atlas turns a map image into a page you can share: places to click, the people who live there, regions, the players at your table, and a timeline of your campaign.",
     items:["Everything happens in this browser. Nothing is uploaded.",
            "The result is one file that works offline and on any hosting.",
-           "This tour takes a minute. You can reopen it from Quick tour."] },
+           "This tour takes a minute. You can reopen it from Quick tour, and What's new lists the latest changes."] },
   { title:"1. Start with a map",
     text:"Drop a map image onto the dark area in the middle, or press Choose map image. JPG, PNG and WEBP all work.",
     items:["Scroll to zoom, drag to pan, and use fit to see the whole map again.",
+           "The plate at the foot of the stage shows how far in you are, where the pointer is on the map and how many points there are.",
            "Map settings holds the atlas name, subtitle and intro text for visitors."] },
   { title:"2. Add places",
     text:"Press Add point on the left, then click the map. Drag a point any time to move it.",
     items:["The panel on the right is where you write: Area for the description and pictures, Characters for the people there.",
+           "Pictures can be animated (GIF, animated WebP) or short silent videos (MP4, WebM), within the size limits shown when you pick one.",
            "Give a point a type and a faction to change its mark and colour.",
            "Hide a point to keep it off the exported map while you are still writing."] },
   { title:"3. Shape the world",
     text:"Everything else lives in Map settings.",
-    items:["Regions: draw territory and place a big name across the land.",
+    items:["Regions: draw territory, place a big name across the land, and choose whether the area is drawn on the finished map.",
            "Sessions: write a recap for each one, and hold a place's text, pictures or characters back until the session where they come up.",
            "Boundary lines: draw solid, dashed or dotted lines over the map for borders, roads or rivers. Named lines go in the legend.",
-           "Players and parties: give each player a profile, group them into parties and move a party from session to session. Readers see a marker that travels and leaves a trail.",
+           "Players and parties: give each player a portrait, race, class, background and a story. Group them into parties and move a party from session to session; readers see a marker that travels and leaves a trail.",
+           "Player heroes: with the map pulled all the way back, readers see the players in a frame beside it, and a click opens a profile."] },
+  { title:"4. Make it yours",
+    text:"The first thing in Map settings is Interface style, and the rest of the look is there too.",
+    items:["Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",
+           "Background behind the map: magic motes, snow or mist.",
+           "Title artwork: a lettered logo that hangs above the map when it is pulled back.",
            "Border: engrave a frame onto map images that have none."] },
-  { title:"4. Preview, save and share",
+  { title:"5. Preview, save and share",
     text:"Preview shows what visitors will see. Export site downloads the finished map as one index.html.",
     items:["Save project downloads a file with all your content. Keep it as your backup.",
            "Open project takes that file, or an exported index.html, and you carry on where you stopped.",
-           "The editor also remembers your work in this browser, but only in this browser on this computer."] }
+           "The editor also remembers your work in this browser, but only in this browser on this computer.",
+           "On a phone the finished map opens each place as a page of its own, with a Map button to go back."] }
 ];
 function tourSeen(){ try{ return localStorage.getItem("atlas.tour")==="1"; }catch(e){ return false; } }
 function tourMark(){ try{ localStorage.setItem("atlas.tour","1"); }catch(e){} }
@@ -1811,5 +1917,7 @@ openDb().then(function(){ return dbGet("project"); }).then(function(saved){
   renderAll();
   if(S.map) setTimeout(fitView, 30);
   // someone opening the editor for the first time gets the tour; a returning project does not
-  if(!saved && !tourSeen()) setTimeout(openTour, 250);
+  if(!saved && !tourSeen()){ newsMark(); setTimeout(openTour, 250); }
+  // anyone else sees what is new, once, when something newer than they have seen has arrived
+  else if(newsSeen() < CHANGELOG[0].id) setTimeout(function(){ openNews(true); }, 250);
 });

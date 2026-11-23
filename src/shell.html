@@ -18,9 +18,13 @@
     <div class="brand">Atlas<em>.</em></div>
     <div class="spacer"></div>
     <button class="tbtn" id="btnGuide">Quick tour</button>
+    <button class="tbtn" id="btnNews">What's new</button>
+    <span class="tsep" aria-hidden="true"></span>
     <button class="tbtn" id="btnSettings">Map settings</button>
+    <span class="tsep" aria-hidden="true"></span>
     <button class="tbtn" id="btnLoad">Open project</button>
     <button class="tbtn" id="btnSave">Save project</button>
+    <span class="tsep" aria-hidden="true"></span>
     <button class="tbtn" id="btnPreview">Preview</button>
     <button class="tbtn primary" id="btnExport">Export site</button>
   </header>
@@ -44,6 +48,7 @@
       <div class="viewport" id="viewport">
         <div class="canvas" id="canvas"></div>
       </div>
+      <div class="hud" aria-hidden="true"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>
       <div class="dropzone" id="dropzone">
         <div class="card">
           <h3>Start with a map</h3>
@@ -58,6 +63,11 @@
         <button id="sessNext" title="Later session" aria-label="Later session">&#8250;</button>
       </div>
       <div class="stage-hint hidden" id="stageHint">Click the map to place the point. Esc cancels.</div>
+      <div class="statbar hidden" id="statBar" aria-label="Map status">
+        <span class="seg"><b>Zoom</b><i id="stZoom">100%</i></span>
+        <span class="seg"><b>Cursor</b><i id="stPos">&ndash;</i></span>
+        <span class="seg"><b>Points</b><i id="stCount">0</i></span>
+      </div>
       <div class="zoombar hidden" id="zoombar">
         <button id="zIn" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21M10 7.5v5M7.5 10h5"/></svg></button>
         <button id="zOut" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21M7.5 10h5"/></svg></button>

@@ -22,6 +22,8 @@ __META__
   --vellum:#e3d3a8; --vellum-2:#c9b07a; --stain:rgba(112,72,24,.20); --burn:rgba(86,48,14,.55);
   --sepia-ink:#33220f; --sepia-rule:rgba(86,58,24,.5); --rubric:#7d2a14;
   --aura-warm:rgba(220,174,106,.08); --aura-cool:rgba(111,195,178,.10);
+  --orb-cool:rgba(143,214,196,.9); --orb-warm:rgba(232,189,114,.9); --orb-rim:rgba(240,220,174,.85);
+  --orb-glow:rgba(143,214,196,.38); --orb-film:rgba(143,214,196,.24); --orb-core:#18211f;
 }
 :root:not([data-theme="light"]){ }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ } }
@@ -82,6 +84,86 @@ button{font:inherit;color:inherit;cursor:pointer}
   font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:var(--linen);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s}
 .zhint.on{opacity:1}
+/* The players in the overview, set out like the party frame of a game: a heading plate over a column of
+   portraits in brass rings, each with a nameplate tucked behind it that carries the name and, in italics,
+   race and class. The frame hangs on a thin brass rail. It is outside the map layer, so it keeps its place
+   and size while the map moves; layoutCast() sizes it to the screen and to the number of players and tells
+   the map how much room to leave (CAST_GUT). It is either on or off, switched by castFade() as the view moves in
+   or out; going off, the rows draw back to the left one after another, last first, shrinking and blurring as they
+   go, and coming on they return in order. Motion is kept for the moment of touching: at rest there is only a glow. */
+.cast{position:absolute;left:var(--cl,12px);top:50%;transform:translateY(-50%);z-index:5;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  pointer-events:none;transition:visibility 0s}
+/* hidden only once the last row has left, so nothing is cut off mid-way */
+.cast.off{visibility:hidden;transition:visibility 0s 1s}
+/* the rail the frame hangs on: a brass line that fades out at both ends, with a lozenge at the top */
+.cast::before{content:"";position:absolute;left:-9px;top:-6px;bottom:-6px;width:1px;
+  background:linear-gradient(transparent,var(--brass) 14%,var(--brass) 86%,transparent)}
+.cast::after{content:"";position:absolute;left:-12px;top:-9px;width:7px;height:7px;background:var(--brass-lit);
+  transform:rotate(45deg);box-shadow:0 0 0 1.5px rgba(0,0,0,.7)}
+.cast.noname::before,.cast.noname::after{display:none}
+/* on a narrow screen the frame hangs under the map instead: the heading over rows of portraits */
+.cast.below{left:50%;top:var(--ct,60%);transform:translateX(-50%)}
+.cast.below .cast-row{width:100%;flex-direction:row;justify-content:center;align-content:flex-start}
+.cast.below.off .orb{transform:translateY(22px) scale(.78)}
+.cast.below.off .cast-title{transform:translateY(22px)}
+/* the heading is a plate of its own: charcoal with a brass edge and the words in capitals */
+.cast-title{align-self:stretch;text-align:center;padding:7px 10px 6px;font-family:var(--display);font-size:12.5px;
+  font-weight:600;line-height:1.3;letter-spacing:.2em;text-transform:uppercase;color:var(--brass-lit);
+  background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:2px;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 0 0 3px rgba(11,16,18,.55),0 3px 10px rgba(0,0,0,.5);
+  text-shadow:0 1px 0 #000,0 0 12px var(--orb-glow)}
+.cast-title span{display:block;margin-right:-.2em}
+.cast.off .ring::before{animation-play-state:paused}
+.cast-row{--b:48px;--g:10px;--ow:180px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:var(--g)}
+.orb{width:var(--ow);height:var(--b);padding:0;background:none;border:none;display:flex;align-items:center;
+  text-align:left;pointer-events:auto;
+  transition:transform .6s cubic-bezier(.22,.7,.3,1),opacity .5s,filter .5s;transition-delay:calc(var(--i,0) * 55ms)}
+.cast.off .orb{transform:translateX(-34px) scale(.78);opacity:0;filter:blur(5px);pointer-events:none;
+  transition-delay:calc((var(--n,10) - 1 - var(--i,0)) * 40ms)}
+.cast-title,.cast::before,.cast::after{transition:transform .6s cubic-bezier(.22,.7,.3,1),opacity .5s,filter .5s}
+.cast.off .cast-title{transform:translateX(-34px);opacity:0;filter:blur(5px)}
+.cast.off::before,.cast.off::after{opacity:0}
+.orb:focus-visible{outline:none}
+.orb:focus-visible .face,.orb:focus-visible .plate{outline:2px solid var(--brass-lit);outline-offset:2px}
+.orb .ring{position:relative;flex:0 0 auto;display:block;width:var(--b);height:var(--b);z-index:1}
+/* a soft aura that turns slowly behind the ring */
+.orb .ring::before{content:"";position:absolute;inset:-5px;border-radius:50%;opacity:.55;filter:blur(4px);
+  background:conic-gradient(var(--orb-cool),transparent 28%,var(--orb-warm) 50%,transparent 78%,var(--orb-cool));
+  animation:orb-spin 14s linear infinite;animation-delay:calc(var(--i,0) * -2.3s);transition:opacity .25s}
+.orb .face{position:absolute;inset:0;z-index:1;border-radius:50%;overflow:hidden;display:grid;place-items:center;
+  background:radial-gradient(circle at 40% 35%,#3a4a46,var(--orb-core));border:2px solid var(--orb-rim);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(11,16,18,.8),0 0 0 4.5px var(--line-2),0 5px 12px rgba(0,0,0,.55);
+  font-family:var(--display);font-weight:600;font-size:calc(var(--b) * .42);color:var(--linen);
+  transition:box-shadow .25s ease}
+.orb .face img,.orb .face video{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none}
+/* the sheen of a bubble: a highlight up on the left and a tinted film round the rim */
+.orb .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.4),rgba(255,255,255,0) 24%);
+  box-shadow:inset 0 0 10px rgba(0,0,0,.45),inset 0 -6px 14px var(--orb-film)}
+/* the nameplate: tucked behind the ring, so the portrait sits on its left end */
+.orb .plate{position:relative;flex:1;min-width:0;height:calc(var(--b) * .82);margin-left:-14px;padding:0 18px 0 22px;
+  display:flex;flex-direction:column;justify-content:center;
+  background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-left:none;border-radius:0 3px 3px 0;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 -1px 0 rgba(0,0,0,.3),0 3px 10px rgba(0,0,0,.5);
+  transition:transform .25s cubic-bezier(.22,.7,.3,1),border-color .25s,box-shadow .25s}
+.orb .plate::after{content:"";position:absolute;right:6px;top:50%;width:5px;height:5px;margin-top:-2.5px;
+  background:var(--brass);transform:rotate(45deg);transition:background .25s}
+.orb .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:var(--display);font-size:14.5px;font-weight:600;line-height:1.2;letter-spacing:.02em;color:var(--linen);
+  transition:color .25s}
+.orb .sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-style:italic;font-size:12.5px;line-height:1.2;color:var(--muted)}
+/* touched or open: the ring and the plate light up in brass, and the plate steps out a little */
+.orb:hover .plate,.orb[aria-current="true"] .plate{transform:translateX(3px);border-color:var(--brass-lit);
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.24),0 0 18px var(--orb-glow),0 3px 10px rgba(0,0,0,.5)}
+.orb:hover .plate::after,.orb[aria-current="true"] .plate::after{background:var(--brass-lit)}
+.orb:hover .nm,.orb[aria-current="true"] .nm{color:var(--brass-lit)}
+.orb:hover .face,.orb[aria-current="true"] .face{
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(11,16,18,.8),0 0 0 4.5px var(--brass-lit),0 0 20px var(--orb-cool),0 5px 12px rgba(0,0,0,.55)}
+.orb:hover .ring::before,.orb[aria-current="true"] .ring::before{opacity:.95}
+.cast.noname .plate{display:none}
+@keyframes orb-spin{to{transform:rotate(360deg)}}
 .pin{position:absolute;--knob:16px;
   transform:translate(-50%,calc(var(--knob) / -2)) scale(var(--inv,1));
   transform-origin:50% calc(var(--knob) / 2);
@@ -298,6 +380,12 @@ button{font:inherit;color:inherit;cursor:pointer}
   display:grid;place-items:center;color:var(--paper-mute);margin-bottom:12px;font-style:italic;font-size:13px}
 .slide h4{font-family:var(--display);font-size:21px;font-weight:600;margin:0 0 1px}
 .slide .role{color:var(--paper-mute);font-size:13.5px;margin:0 0 10px}
+/* a short character sheet: each line a label in rubric capitals and its value, ruled like a form */
+.stats{display:grid;grid-template-columns:auto 1fr;gap:0 14px;margin:0 0 14px;overflow:hidden}
+.stats dt,.stats dd{padding:6px 0 5px;border-bottom:1px dotted var(--sepia-rule)}
+.stats dt{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--rubric);padding-top:8px}
+.stats dd{margin:0;font-size:15.5px;line-height:1.35;color:var(--sepia-ink);min-width:0;overflow-wrap:anywhere}
 .car-nav{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:12px}
 /* with several characters the arrows come first and stay pinned while the text scrolls */
 .car .car-nav{position:sticky;top:-16px;z-index:2;margin:-16px -14px 14px;padding:16px 14px 10px;
@@ -389,6 +477,174 @@ button{font:inherit;color:inherit;cursor:pointer}
 .about .ghost{background:linear-gradient(#ecdfb9,#cdb985);border-color:rgba(80,52,20,.55);color:#2a1e0f;
   box-shadow:inset 0 1px 0 rgba(255,250,232,.55),0 1px 2px rgba(0,0,0,.25)}
 
+/* ---------- HUD: the instruments round the map ---------- */
+/* One vocabulary for everything that is not the map or the parchment: plates of charcoal metal with a brass
+   edge and a dark inner ring, lozenges where two things meet, and brackets at the corners of the field of view.
+   The title and the legend are plates of their own, the zoom buttons are one control, and the edges of the
+   view darken a little, so the map is seen through an instrument and not pasted onto the page. */
+.hud{position:fixed;top:0;bottom:0;left:0;right:var(--panel-w);z-index:15;pointer-events:none;
+  box-shadow:inset 0 0 110px rgba(0,0,0,.5)}
+.hud .c{position:absolute;width:46px;height:46px;border:0 solid var(--brass-lit);opacity:.8;
+  filter:drop-shadow(0 0 5px rgba(220,174,106,.28))}
+.hud .c::after{content:"";position:absolute;width:8px;height:8px;background:var(--brass-lit);transform:rotate(45deg);
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.75)}
+.hud .tl{left:9px;top:9px;border-width:2px 0 0 2px}      .hud .tl::after{left:-5px;top:-5px}
+.hud .tr{right:9px;top:9px;border-width:2px 2px 0 0}     .hud .tr::after{right:-5px;top:-5px}
+.hud .bl{left:9px;bottom:9px;border-width:0 0 2px 2px}   .hud .bl::after{left:-5px;bottom:-5px}
+.hud .br{right:9px;bottom:9px;border-width:0 2px 2px 0}  .hud .br::after{right:-5px;bottom:-5px}
+/* the header no longer has a bar of its own: its plates sit straight on the map */
+.hdr{padding:22px 28px;background:none;align-items:center;gap:14px}
+.ttl,.legend{
+  position:relative;background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:2px;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 0 0 3px rgba(11,16,18,.55),0 6px 18px rgba(0,0,0,.5);
+}
+.ttl{padding:8px 30px 8px 26px;text-shadow:0 1px 0 #000,0 0 14px rgba(220,174,106,.25)}
+/* a lozenge on each end of the title plate, the way a banner is pinned */
+.ttl::before,.ttl::after{content:"";position:absolute;top:50%;width:9px;height:9px;margin-top:-4.5px;
+  background:var(--brass-lit);transform:rotate(45deg);box-shadow:0 0 0 1.5px #0b1012}
+.ttl::before{left:-5px}
+.ttl::after{right:-5px}
+.legend{padding:8px 18px;gap:8px 16px;max-width:min(58vw,720px)}
+.legend:empty{display:none}
+.legend i{box-shadow:0 0 0 1.5px rgba(0,0,0,.6),0 0 0 2.5px rgba(180,135,74,.5)}
+/* the three zoom buttons are one control, divided by fine rules */
+.zoom{gap:0;background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:3px;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),0 6px 18px rgba(0,0,0,.5)}
+.zoom button{background:none;border:0;border-radius:0;box-shadow:none}
+.zoom button+button{border-top:1px solid var(--line)}
+.zoom button:hover{background:rgba(220,174,106,.16);filter:none}
+/* the players' frame sits above the darkened edge */
+.cast{z-index:16}
+
+/* ---------- Arcane: night glass and starlight ---------- */
+/* The second look, chosen in Map settings. The same parts as the classic one, dressed differently: a night sky
+   behind the map, fine lavender lines instead of brass, plates of dark glass with a rounded and a square corner
+   in turn, curved ornaments at the corners of the view, and a headline that glows. It only swaps colours and
+   ornaments on the data-ui attribute, so every layout rule above holds for both. */
+:root[data-ui="arcane"]{
+  --ink:#070a1f; --ink-2:#0e1233; --line:rgba(190,180,255,.22); --line-2:rgba(200,192,255,.5);
+  --brass:#9c90e6; --brass-lit:#d7d0ff;
+  --linen:#e8e4ff; --text:#e6e3fa; --muted:#9a9ccc;
+  --mote-warm:#c9b8ff; --mote-cool:#7fd4ff; --cloud:#cfd6ff;
+  --aura-warm:rgba(160,120,255,.12); --aura-cool:rgba(80,150,255,.14);
+  --frame-line:rgba(190,182,255,.62); --frame-band:rgba(8,10,40,.3);
+  --plate-top:#2a3182; --plate-bot:#151a4d;
+  --orb-cool:rgba(127,212,255,.9); --orb-warm:rgba(201,184,255,.9); --orb-rim:rgba(216,210,255,.85);
+  --orb-glow:rgba(150,160,255,.4); --orb-film:rgba(150,160,255,.25); --orb-core:#12163a;
+  --vellum:#161c52; --vellum-2:#0a0d2d; --stain:rgba(120,100,255,.16); --burn:rgba(90,110,255,.28);
+  --sepia-ink:#e4e0ff; --sepia-rule:rgba(190,182,255,.45); --rubric:#ffc9a0;
+  --paper:#161c52; --paper-2:#0a0d2d; --paper-ink:#e4e0ff; --paper-mute:#a9aad8;
+}
+:root[data-ui="arcane"] .vp{background:
+  radial-gradient(1.2px 1.2px at 32px 48px,rgba(255,255,255,.9),transparent) 0 0 / 260px 230px,
+  radial-gradient(1px 1px at 150px 120px,rgba(210,220,255,.8),transparent) 0 0 / 310px 290px,
+  radial-gradient(1.6px 1.6px at 90px 200px,rgba(255,220,240,.9),transparent) 0 0 / 470px 410px,
+  radial-gradient(ellipse at 50% 42%,#1c2468,#0a0d2e 62%,#04051a)}
+:root[data-ui="arcane"] .vp[data-bg="snow"],
+:root[data-ui="arcane"] .vp[data-bg="mist"]{background:#04061a}
+/* the plates: dark glass, a rounded corner and a square one in turn, a fine line and a faint glow */
+:root[data-ui="arcane"] .ttl,
+:root[data-ui="arcane"] .legend,
+:root[data-ui="arcane"] .zoom,
+:root[data-ui="arcane"] .rgn,
+:root[data-ui="arcane"] .zhint,
+:root[data-ui="arcane"] .cast-title,
+:root[data-ui="arcane"] .orb .plate,
+:root[data-ui="arcane"] .ghost,
+:root[data-ui="arcane"] .about .ghost{
+  background:linear-gradient(rgba(36,43,118,.78),rgba(12,15,52,.86));border-color:rgba(200,192,255,.5);border-radius:11px 3px 11px 3px;
+  box-shadow:inset 0 1px 0 rgba(220,214,255,.22),inset 0 0 0 3px rgba(8,10,40,.5),0 0 18px rgba(120,110,255,.2),0 6px 18px rgba(0,0,0,.5);
+  color:var(--linen)}
+:root[data-ui="arcane"] .orb .plate{border-radius:0 11px 3px 0}
+:root[data-ui="arcane"] .zoom{border-radius:11px 3px}
+:root[data-ui="arcane"] .ghost:hover,
+:root[data-ui="arcane"] .about .ghost:hover{background:linear-gradient(rgba(70,80,170,.85),rgba(24,28,84,.9));filter:none;color:#fff}
+:root[data-ui="arcane"] .ttl{color:#ffe3c8;text-shadow:0 0 14px rgba(255,150,210,.6),0 0 30px rgba(140,110,255,.5)}
+:root[data-ui="arcane"] .ttl small{color:#b9b8ea;text-shadow:none}
+:root[data-ui="arcane"] .legend span{color:#cfcaf5}
+:root[data-ui="arcane"] .legend i{box-shadow:0 0 0 1.5px rgba(8,10,40,.7),0 0 0 2.5px rgba(200,192,255,.5),0 0 8px currentColor}
+:root[data-ui="arcane"] .ttl::before,
+:root[data-ui="arcane"] .ttl::after{border-radius:50%;transform:none;width:7px;height:7px;margin-top:-3.5px;
+  background:#fff;box-shadow:0 0 0 2px rgba(200,192,255,.6),0 0 10px rgba(180,170,255,.9)}
+:root[data-ui="arcane"] .ttl::before{left:-4px}
+:root[data-ui="arcane"] .ttl::after{right:-4px}
+:root[data-ui="arcane"] .zoom button{color:var(--brass-lit)}
+:root[data-ui="arcane"] .zoom button:hover{background:rgba(160,150,255,.2);color:#fff}
+:root[data-ui="arcane"] .zoom button+button{border-top-color:rgba(200,192,255,.25)}
+:root[data-ui="arcane"] .cast-title{color:#ffe3c8;text-shadow:0 0 12px rgba(255,150,210,.55)}
+:root[data-ui="arcane"] .orb .nm{color:var(--linen)}
+:root[data-ui="arcane"] .orb .sub{color:#a9aad8}
+:root[data-ui="arcane"] .orb .plate::after{border-radius:50%;transform:none;background:#fff;box-shadow:0 0 6px rgba(180,170,255,.9)}
+:root[data-ui="arcane"] .orb:hover .plate,
+:root[data-ui="arcane"] .orb[aria-current="true"] .plate{border-color:#fff;box-shadow:inset 0 1px 0 rgba(220,214,255,.3),0 0 20px rgba(150,140,255,.55),0 3px 10px rgba(0,0,0,.5)}
+:root[data-ui="arcane"] .orb:hover .nm,
+:root[data-ui="arcane"] .orb[aria-current="true"] .nm{color:#fff}
+:root[data-ui="arcane"] .orb:hover .face,
+:root[data-ui="arcane"] .orb[aria-current="true"] .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(8,10,40,.8),0 0 0 4.5px #fff,0 0 22px rgba(140,130,255,.8),0 5px 12px rgba(0,0,0,.55)}
+:root[data-ui="arcane"] .orb .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(8,10,40,.8),0 0 0 4.5px rgba(200,192,255,.6),0 5px 12px rgba(0,0,0,.55)}
+/* the corners of the view: a curved ornament with a fine second line, instead of a bracket */
+:root[data-ui="arcane"] .hud{box-shadow:inset 0 0 120px rgba(3,4,40,.6)}
+:root[data-ui="arcane"] .hud .c{width:58px;height:58px;border:0;opacity:.9;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2056%2056%27%3E%3Cpath%20d%3D%27M3%2054V20C3%2010%2010%203%2020%203H54%27%20fill%3D%27none%27%20stroke%3D%27%23d7d0ff%27%20stroke-width%3D%271.6%27%2F%3E%3Cpath%20d%3D%27M9%2054V24C9%2015%2015%209%2024%209H54%27%20fill%3D%27none%27%20stroke%3D%27%23d7d0ff%27%20stroke-opacity%3D%27.45%27%2F%3E%3Ccircle%20cx%3D%273%27%20cy%3D%273%27%20r%3D%272.6%27%20fill%3D%27%23d7d0ff%27%2F%3E%3Cpath%20d%3D%27M19%2014l4%204-4%204-4-4z%27%20fill%3D%27none%27%20stroke%3D%27%23d7d0ff%27%2F%3E%3C%2Fsvg%3E") no-repeat 0 0 / 100% 100%;
+  filter:drop-shadow(0 0 6px rgba(160,150,255,.55))}
+:root[data-ui="arcane"] .hud .c::after{display:none}
+:root[data-ui="arcane"] .hud .tr{transform:scaleX(-1)}
+:root[data-ui="arcane"] .hud .bl{transform:scaleY(-1)}
+:root[data-ui="arcane"] .hud .br{transform:scale(-1,-1)}
+/* the side panel: dark glass with a glow along its edges in place of the burnt vellum */
+:root[data-ui="arcane"] .sheet{
+  background:
+    radial-gradient(60% 26% at 82% 14%,rgba(140,120,255,.24),transparent 70%),
+    radial-gradient(70% 34% at 8% 88%,rgba(70,120,255,.2),transparent 70%),
+    linear-gradient(#151b50,#080b29);
+  border-left:1px solid rgba(200,192,255,.5)}
+:root[data-ui="arcane"] .sheet::before{mix-blend-mode:screen;opacity:.05}
+:root[data-ui="arcane"] .sheet::after{box-shadow:inset 0 0 60px rgba(100,110,255,.25),inset 0 0 12px rgba(160,150,255,.3)}
+:root[data-ui="arcane"] .sh-title{color:#ffe3c8;text-shadow:0 0 16px rgba(255,150,210,.45)}
+:root[data-ui="arcane"] .sh-sum,
+:root[data-ui="arcane"] .sess-count,
+:root[data-ui="arcane"] .sh-tabs button,
+:root[data-ui="arcane"] .hint,
+:root[data-ui="arcane"] .none,
+:root[data-ui="arcane"] .slide .role,
+:root[data-ui="arcane"] .car-count small,
+:root[data-ui="arcane"] .sh-sess-body .sess-count{color:#a9aad8}
+:root[data-ui="arcane"] .sess-name,:root[data-ui="arcane"] .sh-tabs button[aria-selected="true"]{color:#fff}
+:root[data-ui="arcane"] .sh-tabs button[aria-selected="true"]{border-bottom-color:#ffc9a0;text-shadow:0 0 10px rgba(255,170,220,.6)}
+:root[data-ui="arcane"] .sh-back,
+:root[data-ui="arcane"] .sh-sess button,
+:root[data-ui="arcane"] .car-nav button,
+:root[data-ui="arcane"] .sh-close{background:rgba(120,110,255,.16);border-color:rgba(200,192,255,.4);color:var(--sepia-ink);border-radius:2px 9px 2px 9px}
+:root[data-ui="arcane"] .sh-back:hover,
+:root[data-ui="arcane"] .sh-sess button:hover:not(:disabled),
+:root[data-ui="arcane"] .car-nav button:hover:not(:disabled),
+:root[data-ui="arcane"] .sh-close:hover{background:rgba(150,140,255,.32)}
+:root[data-ui="arcane"] .sh-body .area,
+:root[data-ui="arcane"] .gal-win,
+:root[data-ui="arcane"] .slide img,
+:root[data-ui="arcane"] .slide video{filter:none;border:1px solid rgba(200,192,255,.45);border-radius:3px;
+  box-shadow:0 0 0 3px rgba(8,10,40,.6),0 0 0 4px rgba(200,192,255,.25),0 6px 18px rgba(0,0,0,.5)}
+:root[data-ui="arcane"] .slide .ph{border-color:rgba(200,192,255,.4)}
+:root[data-ui="arcane"] .car .car-nav{background:linear-gradient(rgba(16,21,70,.97) 80%,transparent)}
+:root[data-ui="arcane"] .dots button{background:rgba(200,192,255,.3)}
+:root[data-ui="arcane"] .dots button[aria-current="true"]{background:#ffc9a0;box-shadow:0 0 8px rgba(255,190,200,.8)}
+:root[data-ui="arcane"] .sh-body{scrollbar-color:rgba(190,182,255,.5) transparent}
+:root[data-ui="arcane"] .sh-body::-webkit-scrollbar-thumb{background:rgba(190,182,255,.45);background-clip:content-box}
+:root[data-ui="arcane"] .sh-tabs::after{background:
+  linear-gradient(var(--sepia-rule),var(--sepia-rule)) left 0 top 3px / calc(50% - 9px) 1px no-repeat,
+  linear-gradient(var(--sepia-rule),var(--sepia-rule)) right 0 top 3px / calc(50% - 9px) 1px no-repeat,
+  linear-gradient(45deg,transparent 40%,#d7d0ff 41% 59%,transparent 60%) center / 7px 7px no-repeat}
+:root[data-ui="arcane"] .about{background:radial-gradient(ellipse at 50% 40%,rgba(10,13,50,.72),rgba(2,3,20,.92))}
+:root[data-ui="arcane"] .about .box{background:radial-gradient(120% 70% at 8% 0%,rgba(140,120,255,.25),transparent 62%),linear-gradient(#151b50,#080b29);
+  border-color:rgba(200,192,255,.5);outline-color:rgba(200,192,255,.4);
+  box-shadow:inset 0 0 70px rgba(100,110,255,.25),0 34px 90px rgba(0,0,0,.75),0 0 40px rgba(120,110,255,.25)}
+:root[data-ui="arcane"] .about h3{color:#ffe3c8;text-shadow:0 0 14px rgba(255,150,210,.5)}
+:root[data-ui="arcane"] .pin .lbl{text-shadow:0 0 10px rgba(130,120,255,.6),0 1px 2px rgba(0,0,0,.5)}
+:root[data-ui="arcane"] .lightbox{background:radial-gradient(ellipse at 50% 40%,rgba(8,10,44,.94),rgba(2,3,20,.98))}
+:root[data-ui="arcane"] .lightbox img,:root[data-ui="arcane"] .lightbox video{border-color:rgba(200,192,255,.6)}
+@media (max-width:760px){
+  :root[data-ui="arcane"] .hud .c{width:34px;height:34px}
+}
+
 @media (max-width:760px){
   :root{--panel-w:0px}
   body.has-sessions .recap-btn{display:inline-block}
@@ -419,8 +675,10 @@ button{font:inherit;color:inherit;cursor:pointer}
   .slide h4{order:1;font-size:26px;margin:0}
   .slide .role{order:2;font-size:15px;margin:2px 0 14px}
   .slide img,.slide video,.slide .ph{order:3;float:none;width:100%;max-width:none;aspect-ratio:3/4;margin:0 0 16px}
-  .slide .prose{order:4}
+  .slide .stats{order:4}
+  .slide .prose{order:5}
   .slide .prose p{max-width:none}
+  .cast-title{font-size:10px;letter-spacing:.14em}
   .car .car-nav{margin:-14px -4px 12px;padding:14px 4px 10px}
   /* a place: its picture across the width too, with no ceiling on its height */
   .sh-body .area{max-height:none;width:100%}
@@ -428,8 +686,19 @@ button{font:inherit;color:inherit;cursor:pointer}
   /* on the characters tab the place's own one-line summary steps aside, so the person comes first */
   .sheet.view-chars .sh-sum{display:none}
   .legend{display:none}
-  .ttl{font-size:17px}
-  .hdr{padding:9px 14px;gap:10px}
+  .ttl{font-size:17px;padding:6px 18px 6px 16px}
+  .ttl::before,.ttl::after{width:7px;height:7px;margin-top:-3.5px}
+  .ttl::before{left:-4px}
+  .ttl::after{right:-4px}
+  .hdr{padding:16px 18px;gap:8px;flex-wrap:wrap}
+  .hdr .ghost{white-space:nowrap}
+  .hdr .sp{display:none}
+  .hud{box-shadow:inset 0 0 70px rgba(0,0,0,.45)}
+  .hud .c{width:24px;height:24px}
+  .hud .tl,.hud .bl{left:6px}
+  .hud .tr,.hud .br{right:6px}
+  .hud .tl,.hud .tr{top:6px}
+  .hud .bl,.hud .br{bottom:6px}
   .ghost{padding:8px 12px;font-size:14px}
   /* the whole map is small on a phone, so its markers have to come down with it,
      or the labels cover the land they are pointing at */
@@ -464,6 +733,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 </header>
 
 <div class="vp" id="vp"><canvas class="magic" id="magic" aria-hidden="true"></canvas><div class="cv" id="cv"></div></div>
+
+<div class="hud" aria-hidden="true"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>
 
 <div class="zhint" id="zhint" aria-hidden="true">Zoom in to reveal places</div>
 
@@ -513,6 +784,8 @@ var PROJECT = JSON.parse(document.getElementById('atlas-project').textContent);
 var DATA = published(PROJECT);
 // the reader starts in the latest session: the world as it stands now
 var SESSION = Math.max(0, DATA.sessions.length-1);
+// the look: the style sheet swaps its colours and ornaments on this attribute
+document.documentElement.setAttribute('data-ui', DATA.ui);
 function published(p){
   return {
     title:p.title, subtitle:p.subtitle, intro:p.intro, map:p.map,
@@ -528,9 +801,12 @@ function published(p){
       return {label:(b.label==null?'':String(b.label)), color:lineCol(b.color),
         style:(b.style==='solid'||b.style==='dotted')?b.style:'dashed', paths:paths};
     }).filter(function(b){ return b.paths.length; }),
+    ui:p.ui==='arcane'?'arcane':'classic',
     background:(p.background==='snow'||p.background==='mist')?p.background:'magic',
     players:(p.players||[]).map(function(q){
-      return {id:q.id, name:q.name||'', role:q.role||'', description:q.description||'', image:q.image||null};
+      var legacy=(!q.race && !q['class']) ? (q.role||'') : '';
+      return {id:q.id, name:q.name||'', race:q.race||'', 'class':q['class']||legacy, background:q.background||'',
+        description:q.description||'', image:q.image||null};
     }),
     parties:(p.parties||[]).map(function(pt){
       var steps={};
@@ -576,17 +852,61 @@ function rgba(hex,a){
 /* --- map --- */
 var vp=document.getElementById('vp'), cv=document.getElementById('cv');
 var V={z:1,x:0,y:0};
-// keep the map inside the viewport: panning stops at the image edges, and an axis
-// that is smaller than the viewport stays centred
+// The range the map's top-left corner may take on each axis: panning stops at the image edges, and an axis
+// that is smaller than the viewport is held in the middle (both ends equal).
+function bounds(){
+  var r=vp.getBoundingClientRect(), w=DATA.map.w*V.z, h=DATA.map.h*V.z, x=null, y=null;
+  // a map that fits beside the players' column is centred in what the column leaves; a wider one sits flush
+  // right until it fills the screen, so the two cases meet without a jump
+  if(w<=r.width-gut) x=gut+(r.width-gut-w)/2;
+  else if(w<=r.width) x=r.width-w;
+  if(h<=r.height) y=(r.height-h)/2;
+  return {x0:x===null?r.width-w:x, x1:x===null?0:x, y0:y===null?r.height-h:y, y1:y===null?0:y, w:r.width, h:r.height};
+}
 function clamp(){
   if(!DATA.map) return;
-  var r=vp.getBoundingClientRect(), w=DATA.map.w*V.z, h=DATA.map.h*V.z;
-  V.x = w<=r.width  ? (r.width-w)/2  : Math.min(0,Math.max(r.width-w, V.x));
-  V.y = h<=r.height ? (r.height-h)/2 : Math.min(0,Math.max(r.height-h,V.y));
+  var b=bounds();
+  V.x=Math.min(b.x1,Math.max(b.x0,V.x)); V.y=Math.min(b.y1,Math.max(b.y0,V.y));
+}
+/* Pulled past an edge, the map gives a little, more stiffly the further it goes, and springs back when let go
+   (springBack). An axis held in the middle gives the same way, so a drag always answers the hand. */
+var GIVE=.55;
+function give(v,lo,hi,room){
+  var o=v>hi?v-hi:(v<lo?v-lo:0);
+  if(!o) return v;
+  var a=Math.abs(o);
+  return (o<0?lo:hi)+(o<0?-1:1)*a*GIVE/(a*GIVE/room+1);
+}
+// the inverse: where the hand has to be for the map to show at v
+function ungive(v,lo,hi,room){
+  var o=v>hi?v-hi:(v<lo?v-lo:0);
+  if(!o) return v;
+  var a=Math.min(Math.abs(o),room*.95);
+  return (o<0?lo:hi)+(o<0?-1:1)*a/(GIVE*(1-a/room));
+}
+function springBack(){
+  if(!DATA.map) return;
+  var fx=V.x, fy=V.y, b=bounds(), t0=null;
+  if(fx>=b.x0 && fx<=b.x1 && fy>=b.y0 && fy<=b.y1){ apply(); return; }
+  function step(ts){
+    if(t0===null) t0=ts;
+    // the target is taken afresh each frame, so a map still moving aside for the players lands where it should
+    var p=CALM?1:Math.min(1,(ts-t0)/260), e=1-Math.pow(1-p,3), b=bounds();
+    V.x=fx+(Math.min(b.x1,Math.max(b.x0,fx))-fx)*e;
+    V.y=fy+(Math.min(b.y1,Math.max(b.y0,fy))-fy)*e;
+    if(p<1){ spring=requestAnimationFrame(step); render(); }
+    else { spring=0; apply(); }
+  }
+  spring=requestAnimationFrame(step);
 }
 var zhint=document.getElementById('zhint');
 function apply(){
+  if(spring){ cancelAnimationFrame(spring); spring=0; }
   clamp();
+  render();
+}
+// draws the view as V has it, without keeping it inside the edges
+function render(){
   cv.style.transform='translate('+V.x+'px,'+V.y+'px) scale('+V.z+')';
   cv.style.setProperty('--inv',1/V.z);
   // how far the view has zoomed past the overview: 1 = whole map on screen
@@ -609,17 +929,19 @@ function apply(){
   var off=pins<.04;
   cv.classList.toggle('pins-off',off);
   zhint.classList.toggle('on',off && DATA.pois.length>0);
+  // the players leave at the same zoom as the title artwork; with no artwork on show they go with the clouds
+  castFade(art && !art.hidden ? titleOp : over);
 }
 // the zoom level at which the whole map fits the viewport -- also the zoom-out floor
 // How much further than "the whole map" the reader may pull back. A map cut to the shape of
 // the screen would otherwise sit edge to edge and the void it floats in would never show.
-var PULL_BACK = .7;
+var PULL_BACK = .6;
 function fitZoom(){
   if(!DATA.map) return .05;
   var r=vp.getBoundingClientRect();
   // a fixed margin eats a phone screen, so the breathing room scales with the screen
   var pad=Math.min(48, r.width*.07, r.height*.07);
-  return Math.min((r.width-pad)/DATA.map.w,(r.height-pad)/DATA.map.h);
+  return Math.min((r.width-CAST_GUT-pad)/DATA.map.w,(r.height-pad)/DATA.map.h);
 }
 /* The title artwork is sized for the open band between the header and the top of the map
    as it stands when fully pulled back — that band, not the map, is what it has to fit into,
@@ -635,7 +957,7 @@ function titleRoom(z){
 // upright usually does — and pull back only when it has not, as on a wide monitor.
 function startZoom(){
   if(!DATA.titleImage) return fitZoom();
-  return titleRoom(fitZoom())>=60 ? fitZoom() : fitZoom()*PULL_BACK;
+  return titleRoom(fitZoom())>=130 ? fitZoom() : fitZoom()*PULL_BACK;
 }
 function sizeTitle(z){
   var art=cv.querySelector('.title-art');
@@ -643,9 +965,10 @@ function sizeTitle(z){
   var r=vp.getBoundingClientRect(), room=titleRoom(z);
   art.hidden = room<28;                     // no clear air to hang it in: better not at all
   if(art.hidden) return;
-  var h=Math.min(room*.86, 150);
+  var h=Math.min(room*.94, 320);
   art.style.height=(h/z)+'px';
-  art.style.maxWidth=(Math.min(r.width*.9, DATA.map.w*z*1.15)/z)+'px';
+  // the map is centred in what the players' column leaves, so that is the width the title may take
+  art.style.maxWidth=(Math.min((r.width-CAST_GUT)*.94, DATA.map.w*z*1.15)/z)+'px';
   art.style.bottom='calc(100% + '+(Math.max(6,(room-h)/2)/z)+'px)';
 }
 window.addEventListener('resize',function(){ sizeTitle(startZoom()); apply(); });
@@ -653,27 +976,37 @@ function fit(){ showAt(fitZoom()); }
 function showAt(z){
   if(!DATA.map) return;
   var r=vp.getBoundingClientRect();
-  V.z=z; V.x=(r.width-DATA.map.w*z)/2; V.y=(r.height-DATA.map.h*z)/2; apply();
+  gutTo(CAST_GUT, true);   // the overview is where the players' column stands
+  V.z=z; V.x=gut+(r.width-gut-DATA.map.w*z)/2; V.y=(r.height-DATA.map.h*z)/2; apply();
 }
 function zoomAt(cx,cy,f){
   var r=vp.getBoundingClientRect(), px=cx-r.left, py=cy-r.top;
   var nz=Math.max(fitZoom()*PULL_BACK,Math.min(12,V.z*f)), k=nz/V.z;
   V.x=px-(px-V.x)*k; V.y=py-(py-V.y)*k; V.z=nz; apply();
+  // a wheel turned while the mouse holds the map: the drag carries on from here
+  if(pan && pts[pan.id]) grabFrom(pts[pan.id], pan.id);
 }
 vp.addEventListener('wheel',function(e){ e.preventDefault(); zoomAt(e.clientX,e.clientY,e.deltaY<0?1.15:1/1.15); },{passive:false});
-var pan=null, pts={}, pinch=null;
+var pan=null, pts={}, pinch=null, spring=0;
 // where a lone press began, so that a click on the map can be told from the end of a drag
 var tap=null;
 function down(){ var a=[],k; for(k in pts) a.push(pts[k]); return a; }
 function span(a){ var dx=a[0].x-a[1].x, dy=a[0].y-a[1].y; return Math.sqrt(dx*dx+dy*dy)||1; }
 function middle(a){ return {x:(a[0].x+a[1].x)/2, y:(a[0].y+a[1].y)/2}; }
-function grabFrom(p,id){ pan={id:id,sx:p.x,sy:p.y,ox:V.x,oy:V.y}; vp.classList.add('drag'); }
+// a map caught while it springs back is held where it shows, not where it was heading
+function grabFrom(p,id){
+  if(!DATA.map) return;
+  if(spring){ cancelAnimationFrame(spring); spring=0; }
+  var b=bounds();
+  pan={id:id,sx:p.x,sy:p.y,ox:ungive(V.x,b.x0,b.x1,b.w),oy:ungive(V.y,b.y0,b.y1,b.h)};
+  vp.classList.add('drag');
+}
 
 vp.addEventListener('pointerdown',function(e){
   // Every finger counts towards a pinch, including one that landed on a pin — on a small
   // map that happens all the time. Only the panning is kept off the pins, so that a tap
   // on one still opens its panel instead of dragging the map.
-  var onPin = !!e.target.closest('.pin');
+  var onPin = !!e.target.closest('.pin, .orb');
   if(!down().length) tap={x:e.clientX, y:e.clientY, moved:false};
   pts[e.pointerId]={x:e.clientX,y:e.clientY,id:e.pointerId};
   var a=down();
@@ -701,9 +1034,10 @@ vp.addEventListener('pointermove',function(e){
     return;
   }
   if(!pan||e.pointerId!==pan.id) return;
-  V.x=pan.ox+(e.clientX-pan.sx); V.y=pan.oy+(e.clientY-pan.sy); apply();
-  // re-base on the clamped position, so dragging back from an edge responds at once
-  pan.sx=e.clientX; pan.sy=e.clientY; pan.ox=V.x; pan.oy=V.y;
+  var b=bounds();
+  V.x=give(pan.ox+(e.clientX-pan.sx),b.x0,b.x1,b.w);
+  V.y=give(pan.oy+(e.clientY-pan.sy),b.y0,b.y1,b.h);
+  render();
 });
 function endPan(e){
   delete pts[e.pointerId];
@@ -716,13 +1050,15 @@ function endPan(e){
     else vp.classList.remove('drag');
     return;
   }
-  if(pan&&e.pointerId===pan.id){ pan=null; vp.classList.remove('drag'); }
+  if(pan&&e.pointerId===pan.id){ pan=null; vp.classList.remove('drag'); springBack(); }
 }
 vp.addEventListener('pointerup',endPan); vp.addEventListener('pointercancel',endPan);
+// Firefox does not know -webkit-user-drag and would lift the map picture out as a drag-and-drop ghost
+vp.addEventListener('dragstart',function(e){ e.preventDefault(); });
 // A click on the bare map leaves the place that is open: back to the overview on a wide screen, the panel put
 // away on a phone. Not the end of a drag or a pinch, though, and not a click on a pin, which opens a place.
 vp.addEventListener('click',function(e){
-  if(e.target.closest('.pin') || (tap && tap.moved)) return;
+  if(e.target.closest('.pin, .orb') || (tap && tap.moved)) return;
   if(cur) closeSheet();
 });
 document.getElementById('zi').onclick=function(){var r=vp.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1.3)};
@@ -778,12 +1114,15 @@ function partyState(pt, idx){
   st.present=st.placed && !st.gone;
   return st;
 }
+/* A player is shown the way any character is, with a short sheet of race, class and background. */
+function playerChar(q){
+  var stats=[['Race',q.race],['Class',q['class']],['Background',q.background]].filter(function(r){ return r[1]; });
+  return {name:q.name, role:'', stats:stats, description:q.description, image:q.image};
+}
 /* A party reaches the panel as a place of its own: its note is the text, its members the characters. */
 function partyPlace(pt){
   var st=partyState(pt, sIdx());
-  var people=st.members.map(function(id){ return playerById(id); }).filter(Boolean).map(function(q){
-    return {name:q.name, role:q.role, description:q.description, image:q.image};
-  });
+  var people=st.members.map(function(id){ return playerById(id); }).filter(Boolean).map(playerChar);
   return {id:'party-'+pt.id, name:pt.label, isParty:true, party:pt, color:pt.color,
     summary: st.present ? '' : 'Not on the map in this session.', description:st.note,
     images:[], characters:people};
@@ -954,7 +1293,7 @@ function hideRegion(f){
   var pin=regionPin(f.id); if(pin) pin.removeAttribute('data-hot');
 }
 function markCurrent(id){
-  var all=cv.querySelectorAll('.pin');
+  var all=vp.querySelectorAll('.pin, .orb');
   for(var i=0;i<all.length;i++) all[i].setAttribute('aria-current', all[i].dataset.id===id?'true':'false');
 }
 
@@ -979,7 +1318,7 @@ function visChars(p){ return (p.characters||[]).filter(function(c){ return shown
 // Below this width the panel is a bottom sheet that slides in; above it, a fixed column.
 var MOBILE=window.matchMedia('(max-width:760px)');
 
-function prose(txt){
+function prose(txt, empty){
   var wrap=document.createElement('div'); wrap.className='prose';
   var parts=String(txt||'').split(/\n\s*\n/);
   var any=false;
@@ -988,7 +1327,7 @@ function prose(txt){
     any=true;
     var p=document.createElement('p'); p.textContent=s; wrap.appendChild(p);
   });
-  if(!any){ var n=document.createElement('p'); n.className='none'; n.textContent='Nothing has been written about this place yet.'; wrap.appendChild(n); }
+  if(!any){ var n=document.createElement('p'); n.className='none'; n.textContent=empty||'Nothing has been written about this place yet.'; wrap.appendChild(n); }
   return wrap;
 }
 function openPlace(p){
@@ -1001,6 +1340,7 @@ function renderPlace(){
   // a party is worked out again each time, so it follows the session being read
   if(p && p.isParty){ p=partyPlace(p.party); cur=p; }
   if(!p){ showDefault(); return; }
+  if(p.isPlayer){ renderPlayer(p); return; }
   setView('place');
   var f=fac(p);
   document.getElementById('shKicker').innerHTML='';
@@ -1022,6 +1362,18 @@ function renderPlace(){
   tabA.parentNode.style.display = p.isRegion ? 'none' : '';
   markCurrent(p.id);
   paint();
+}
+/* A player, opened from the overview: a page about them alone, with no tabs. */
+function renderPlayer(p){
+  setView('place');
+  document.getElementById('shKicker').textContent='Player character';
+  document.getElementById('shTitle').textContent=p.player.name||'Unnamed';
+  var sum=document.getElementById('shSum'); sum.textContent=''; sum.style.display='none';
+  tabA.parentNode.style.display='none';
+  sheet.classList.remove('view-chars');
+  markCurrent(p.id);
+  body.innerHTML=''; scroller.scrollTop=0;
+  body.appendChild(profile(playerChar(p.player), true));
 }
 /* Which of the two views the panel is in, and which of its top controls go with it. */
 function setView(v){
@@ -1299,22 +1651,39 @@ function gallery(list, name){
   upd();
   return root;
 }
+/* One character: the portrait beside the text, the name and title, a short sheet if there is one, and the
+   story. `bare` leaves out the name and title, for a page whose heading already carries them. `swiped`
+   tells whether the press that ended on the portrait was a swipe, which should not open it full screen. */
+function profile(c, bare, swiped){
+  var s=document.createElement('div'); s.className='slide';
+  if(c.image){
+    var im=mediaEl(c.image, c.name);
+    im.onclick=function(){ if(swiped && swiped()) return; openLightbox([c.image],0,c.name); };
+    s.appendChild(im);
+  }
+  else { var ph=document.createElement('div'); ph.className='ph'; ph.textContent='no portrait'; s.appendChild(ph); }
+  if(!bare){
+    var h=document.createElement('h4'); h.textContent=c.name||'Unnamed'; s.appendChild(h);
+    if(c.role){ var r=document.createElement('p'); r.className='role'; r.textContent=c.role; s.appendChild(r); }
+  }
+  if(c.stats && c.stats.length){
+    var dl=document.createElement('dl'); dl.className='stats';
+    c.stats.forEach(function(row){
+      var dt=document.createElement('dt'); dt.textContent=row[0];
+      var dd=document.createElement('dd'); dd.textContent=row[1];
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+    s.appendChild(dl);
+  }
+  s.appendChild(prose(c.description, 'Nothing has been written about them yet.'));
+  return s;
+}
 function carousel(list){
   var root=document.createElement('div'); root.className='car';
   var win=document.createElement('div'); win.className='car-win';
   var track=document.createElement('div'); track.className='track';
   list.forEach(function(c){
-    var s=document.createElement('div'); s.className='slide';
-    if(c.image){
-      var im=mediaEl(c.image, c.name);
-      im.onclick=function(){ if(win.dataset.sw==='1') return; openLightbox([c.image],0,c.name); };
-      s.appendChild(im);
-    }
-    else { var ph=document.createElement('div'); ph.className='ph'; ph.textContent='no portrait'; s.appendChild(ph); }
-    var h=document.createElement('h4'); h.textContent=c.name||'Unnamed'; s.appendChild(h);
-    if(c.role){ var r=document.createElement('p'); r.className='role'; r.textContent=c.role; s.appendChild(r); }
-    s.appendChild(prose(c.description));
-    track.appendChild(s);
+    track.appendChild(profile(c, false, function(){ return win.dataset.sw==='1'; }));
   });
   win.appendChild(track); root.appendChild(win);
 
@@ -1483,71 +1852,94 @@ vp.dataset.bg=DATA.background;
 })();
 
 /* --- snow under the map --- */
-/* The other background: snow falling through the dark on the same canvas the motes use. It is
-   built in three layers of depth. Far flakes are many, tiny, sharp and slow; the middle ones are
-   a little larger; the few near ones are big, soft and out of focus, the way a flake close to a
-   lens is. Every flake flutters as it falls, its speed rising and dipping, and a slow wind
-   leans the whole fall one way and then eases back, with small eddies on top. */
+/* The other background is a blizzard: dots and short streaks driven hard across the dark. Every particle
+   is drawn as a line along the way it is moving, so a fast gust stretches the same particle into a longer
+   streak and a lull shrinks it back to a dot. Three layers (far, middle, near) differ in size, speed and
+   brightness, and each layer is stroked in one go, so a few hundred particles cost little. The wind swells
+   and drops in gusts, and a faint haze thickens with it, the way the air whitens in a squall. */
 (function(){
   if(DATA.background!=='snow') return;
   var c=document.getElementById('magic');
   if(!c||!c.getContext) return;
   var ctx=c.getContext('2d');
   var calm=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  var W=0,H=0,flakes=[],last=0,clock=0;
-  // one round sprite per amount of blur: a sharp point, a soft one, and a wide pale bokeh disc
-  function disc(solid){
-    var s=document.createElement('canvas'); s.width=s.height=48;
-    var g=s.getContext('2d'), gr=g.createRadialGradient(24,24,0,24,24,24);
-    gr.addColorStop(0,'rgba(255,255,255,1)');
-    gr.addColorStop(solid,'rgba(244,249,253,.92)');
-    gr.addColorStop(1,'rgba(244,249,253,0)');
-    g.fillStyle=gr; g.fillRect(0,0,48,48);
-    return s;
+  var W=0,H=0,P=[],B=[],last=0,clock=0;
+  // A bank of fog is a heap of soft discs baked once into a sprite; a frame is then one drawImage per bank.
+  function bake(){
+    var w=1100, h=400, sp=document.createElement('canvas'); sp.width=w; sp.height=h;
+    var g=sp.getContext('2d'), n=11+Math.floor(Math.random()*5);
+    for(var i=0;i<n;i++){
+      var r=70+Math.random()*80, x=r+Math.random()*(w-r*2), y=r+Math.random()*(h-r*2), gr=g.createRadialGradient(x,y,0,x,y,r);
+      gr.addColorStop(0,'rgba(214,226,240,.62)'); gr.addColorStop(.5,'rgba(214,226,240,.28)'); gr.addColorStop(1,'rgba(214,226,240,0)');
+      g.fillStyle=gr; g.fillRect(x-r,y-r,r*2,r*2);
+    }
+    return sp;
   }
-  var sharp=disc(.62), soft=disc(.3), blur=disc(.05);
-  function flake(y){
-    // most flakes are far and small; the near, large ones are rare
-    var q=Math.random(), layer=q<.62?0:(q<.92?1:2), d, r, img, a, vy;
-    if(layer===0){ d=.25+Math.random()*.2; r=.5+Math.random()*.7; img=sharp; a=.45+Math.random()*.3; vy=14+Math.random()*12; }
-    else if(layer===1){ d=.5+Math.random()*.25; r=1.1+Math.random()*1.1; img=Math.random()<.5?sharp:soft; a=.55+Math.random()*.3; vy=26+Math.random()*20; }
-    else { d=.85+Math.random()*.15; r=2.6+Math.random()*3; img=blur; a=.16+Math.random()*.2; vy=52+Math.random()*34; }
-    return {x:Math.random()*W, y:y===undefined?Math.random()*H:y, d:d, r:r, img:img, a:a, vy:vy,
-      ph:Math.random()*6.28, fr:.5+Math.random()*1.1,            // flutter, side to side
-      ph2:Math.random()*6.28, fr2:.17+Math.random()*.3,          // a slower second sway
-      sw:4+Math.random()*11*d, sw2:3+Math.random()*7,
-      tw:Math.random()*6.28, ftw:.4+Math.random()*1.2};          // a faint glint as it turns
+  function banks(){
+    var art=[bake(),bake(),bake(),bake()], n=Math.round(Math.max(4,Math.min(9,W*H/120000))); B=[];
+    for(var i=0;i<n;i++){
+      var bw=W*(.8+Math.random()*.9);
+      B.push({img:art[i%art.length], w:bw, h:bw*.364, x:Math.random()*(W+bw)-bw, y:(i+Math.random())/n*(H+80)-80,
+        v:3+Math.random()*6, bob:8+Math.random()*16, ph:Math.random()*6.28, fr:.05+Math.random()*.08,
+        a:.5+Math.random()*.5, bp:Math.random()*6.28, br:.05+Math.random()*.06});
+    }
+  }
+  // width, opacity and streak length of each layer, and the share of the particles it holds
+  var L=[{w:1.2,a:.42,k:.016,share:.56,vy:[24,46],drift:.5},
+         {w:1.8,a:.62,k:.03,share:.32,vy:[46,80],drift:.8},
+         {w:2.6,a:.8,k:.046,share:.12,vy:[76,120],drift:1}];
+  var PAD=90;
+  function make(){
+    var q=Math.random(), li=q<L[0].share?0:(q<L[0].share+L[1].share?1:2), l=L[li];
+    return {li:li, x:Math.random()*(W+PAD*2)-PAD, y:Math.random()*(H+PAD*2)-PAD,
+      vy:l.vy[0]+Math.random()*(l.vy[1]-l.vy[0]), f:l.drift*(.8+Math.random()*.4),
+      ph:Math.random()*6.28, fr:.3+Math.random()*.7, sw:5+Math.random()*16};
   }
   function size(){
     var dpr=Math.min(window.devicePixelRatio||1,2);
     W=vp.clientWidth; H=vp.clientHeight;
     c.width=Math.round(W*dpr); c.height=Math.round(H*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    var n=Math.round(Math.max(90,Math.min(300,W*H/5200)));
-    while(flakes.length<n) flakes.push(flake());
-    flakes.length=n;
+    var n=Math.round(Math.max(260,Math.min(900,W*H/1300)));
+    while(P.length<n) P.push(make());
+    P.length=n;
+    banks();
   }
-  // wind in px/s: a steady lean plus two slow gusts that do not line up with each other
-  function wind(t){ return 14+26*Math.sin(t*.19)+12*Math.sin(t*.53+1.3); }
+  // wind in px/s: a steady push, two slow swells, and now and then a hard gust
+  function gust(t){ return Math.pow(Math.max(0,Math.sin(t*.08+.5)),4); }
+  function wind(t){ return 100+42*Math.sin(t*.17)+26*Math.sin(t*.43+1.3)+92*gust(t); }
   function draw(dt){
-    var w=wind(clock), lift=Math.sin(clock*.31)*5;     // a gust also lifts the snow a little
+    var w=wind(clock), g=gust(clock);
     ctx.clearRect(0,0,W,H);
-    for(var i=0;i<flakes.length;i++){
-      var f=flakes[i];
-      f.ph+=f.fr*dt; f.ph2+=f.fr2*dt; f.tw+=f.ftw*dt;
-      // a tumbling flake does not fall at one speed: it hangs, then drops
-      var fall=f.vy*(1+.28*Math.sin(f.ph*.9+f.ph2))-lift*f.d;
-      f.y+=fall*dt;
-      f.x+=(w*(.25+f.d*.9)+Math.cos(f.ph)*f.sw+Math.sin(f.ph2)*f.sw2)*dt;
-      if(f.y-f.r*2>H){ f.y=-f.r*3; f.x=Math.random()*W; }
-      if(f.x>W+14) f.x-=W+28; else if(f.x<-14) f.x+=W+28;
-      // it fades in at the top and out at the bottom, so the wrap is never seen
-      var edge=Math.min(1,(f.y+24)/70,(H+24-f.y)/70);
-      ctx.globalAlpha=Math.max(0,f.a*edge*(.82+.18*Math.sin(f.tw)));
-      var r=f.r*2;
-      ctx.drawImage(f.img,f.x-r,f.y-r,r*2,r*2);
+    // the haze: the whole air whitens a little as a gust arrives
+    ctx.fillStyle='rgba(206,219,233,'+(.03+.09*g)+')';
+    ctx.fillRect(0,0,W,H);
+    // the banks of fog drift with the wind, thicken and thin by themselves, and thicken in a gust
+    for(var b=0;b<B.length;b++){
+      var k=B[b];
+      k.x+=(k.v+w*.05)*dt; k.ph+=k.fr*dt; k.bp+=k.br*dt;
+      if(k.x>W) k.x=-k.w;
+      ctx.globalAlpha=Math.min(1,k.a*(.55+.45*Math.sin(k.bp))*(.7+.7*g));
+      ctx.drawImage(k.img,k.x,k.y+Math.sin(k.ph)*k.bob,k.w,k.h);
     }
     ctx.globalAlpha=1;
+    ctx.lineCap='round';
+    for(var li=0; li<3; li++){
+      var l=L[li];
+      ctx.lineWidth=l.w; ctx.strokeStyle='rgba(238,245,252,'+l.a+')';
+      ctx.beginPath();
+      for(var i=0;i<P.length;i++){
+        var p=P[i]; if(p.li!==li) continue;
+        p.ph+=p.fr*dt;
+        var vx=w*p.f+Math.sin(p.ph)*p.sw, vy=p.vy+g*20*p.f+Math.cos(p.ph*1.3)*p.sw*.5;
+        p.x+=vx*dt; p.y+=vy*dt;
+        // the torus: what leaves one side comes back on the other, beyond the edge where it cannot be seen
+        if(p.x>W+PAD) p.x-=W+PAD*2; else if(p.x<-PAD) p.x+=W+PAD*2;
+        if(p.y>H+PAD) p.y-=H+PAD*2;
+        ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-vx*l.k,p.y-vy*l.k);
+      }
+      ctx.stroke();
+    }
   }
   function frame(t){
     var dt=last?Math.min(.05,(t-last)/1000):0; last=t; clock+=dt;
@@ -1741,6 +2133,128 @@ var clouds=(function(){
   return {mount:mount, zoom:zoom};
 })();
 
+/* --- the players, beside the map in the overview --- */
+/* Pulled all the way back, the map shows the people at the table in a column to its left: a heading and under
+   it a bubble with each one's portrait, one below the other, and a click opens their profile. The column is
+   outside the map layer, so it keeps its place and size while the map moves, and it is there only while the
+   clouds are. While it is, the map is fitted into the room that is left (CAST_GUT); once it has gone, the map
+   moves back to the middle (gut). A video portrait shows its first frame here. */
+var cast=null, castRow=null;
+var CAST_GUT=0;       // how much of the left of the screen the column takes from the map, in pixels
+/* The room the map leaves the column right now. It follows the column: when the players leave as the view moves
+   in, it eases to nothing and a map narrower than the screen glides to the middle; when they come back, it eases
+   back and the map moves aside for them. */
+var gut=0, gutRaf=0;
+function gutTo(to, now){
+  cancelAnimationFrame(gutRaf); gutRaf=0;
+  if(now){ gut=to; return; }
+  var from=gut, t0=null, dur=CALM?0:500;
+  function step(ts){
+    if(t0===null) t0=ts;
+    var p=dur ? Math.min(1,(ts-t0)/dur) : 1;
+    gut=from+(to-from)*(1-Math.pow(1-p,3));
+    gutRaf = p<1 ? requestAnimationFrame(step) : 0;
+    if(!pan && !spring) apply();
+  }
+  gutRaf=requestAnimationFrame(step);
+}
+function castFace(src){
+  if(!isVideoSrc(src)){ var im=new Image(); im.src=src; im.alt=''; im.draggable=false; return stillIfCalm(im); }
+  var v=document.createElement('video');
+  v.muted=true; v.playsInline=true; v.preload='auto';
+  v.setAttribute('muted',''); v.setAttribute('playsinline',''); v.setAttribute('aria-hidden','true');
+  v.src=blobUrl(src);
+  v.addEventListener('loadeddata',function(){ try{ v.currentTime=.01; }catch(e){} });
+  return v;
+}
+function drawCast(){
+  if(!DATA.players.length || !DATA.map) return;
+  cast=document.createElement('nav'); cast.className='cast off'; cast.setAttribute('aria-label','Player heroes');
+  var head=document.createElement('div'); head.className='cast-title';
+  var words=document.createElement('span'); words.textContent='Player heroes'; head.appendChild(words);
+  castRow=document.createElement('div'); castRow.className='cast-row';
+  cast.appendChild(head); cast.appendChild(castRow);
+  DATA.players.forEach(function(q, i){
+    var b=document.createElement('button'), name=q.name||'Unnamed';
+    b.type='button'; b.className='orb'; b.dataset.id='player-'+q.id;
+    b.style.setProperty('--i', i);
+    b.setAttribute('aria-label', name+', player');
+    var what=[q.race, q['class']].filter(Boolean).join(' ');
+    b.title=name+(what ? ' · '+what : '');
+    var ring=document.createElement('span'); ring.className='ring';
+    var face=document.createElement('span'); face.className='face';
+    if(q.image) face.appendChild(castFace(q.image));
+    else face.textContent=name.trim().charAt(0).toUpperCase();
+    ring.appendChild(face); b.appendChild(ring);
+    var plate=document.createElement('span'); plate.className='plate';
+    var nm=document.createElement('span'); nm.className='nm'; nm.textContent=name; plate.appendChild(nm);
+    var line=[q.race, q['class']].filter(Boolean).join(' \u00b7 ');
+    if(line){ var sub=document.createElement('span'); sub.className='sub'; sub.textContent=line; plate.appendChild(sub); }
+    b.appendChild(plate);
+    b.onclick=function(){ openPlace({id:'player-'+q.id, isPlayer:true, player:q}); };
+    castRow.appendChild(b);
+  });
+  vp.appendChild(cast);
+  layoutCast();
+}
+/* The column goes down the left side and takes the height between the header and the foot of the screen. When
+   the players do not fit in one column at a size worth looking at (ten on a phone held upright do, a few
+   dozen would not), it grows a second one. The names are left out on a narrow screen, where they would
+   not fit: the portrait is the thing, and the profile has the name. */
+function layoutCast(){
+  if(!cast) return;
+  var n=DATA.players.length, narrow=vp.clientWidth<600;
+  cast.classList.toggle('below', narrow);
+  cast.classList.toggle('noname', narrow);
+  cast.style.setProperty('--n', n);
+  if(narrow){
+    // A phone held upright has little width and plenty of height, so the players go under the map: rows of
+    // portraits, evened out (ten are two rows of five), and the map keeps the whole width.
+    var gapN=8, minN=38, maxN=50, sideN=14, room=vp.clientWidth-sideN*2;
+    var perN=Math.max(1, Math.floor((room+gapN)/(minN+gapN)));
+    var rows=Math.ceil(n/perN); perN=Math.ceil(n/rows);
+    var bN=Math.floor(Math.max(minN, Math.min(maxN, (room+gapN)/perN-gapN)));
+    castRow.style.setProperty('--b', bN+'px');
+    castRow.style.setProperty('--g', gapN+'px');
+    castRow.style.setProperty('--ow', bN+'px');
+    castRow.style.height='';
+    cast.style.width=Math.max(150, perN*bN+(perN-1)*gapN)+'px';
+    CAST_GUT=0; gutTo(0, true);
+    // just under the map as it stands with the whole of it on screen
+    var mapBottom=(vp.clientHeight+DATA.map.h*fitZoom())/2;
+    cast.style.setProperty('--ct', Math.round(mapBottom+18)+'px');
+    return;
+  }
+  var edge=20, gap=10, min=42, max=58, plateW=176, lap=14;
+  var titleH=44, pad=headerBottom()+8;
+  var avail=Math.max(150, vp.clientHeight-pad*2-titleH-gap);
+  var per=Math.max(1, Math.floor((avail+gap)/(min+gap)));
+  var cols=Math.ceil(n/per); per=Math.ceil(n/cols);
+  var b=Math.floor(Math.max(min, Math.min(max, (avail+gap)/per-gap)));
+  var ow=b+plateW-lap;
+  castRow.style.setProperty('--b', b+'px');
+  castRow.style.setProperty('--g', gap+'px');
+  castRow.style.setProperty('--ow', ow+'px');
+  castRow.style.height=(per*(b+gap)-gap)+'px';
+  var w=Math.max(150, cols*ow+(cols-1)*gap);
+  cast.style.width=w+'px';
+  cast.style.setProperty('--cl', edge+'px');
+  CAST_GUT=edge+w+edge;
+  gutTo(castOn?CAST_GUT:0, true);
+}
+window.addEventListener('resize',function(){ layoutCast(); sizeTitle(startZoom()); apply(); });
+// `over` is how much of the overview is on screen: 1 pulled all the way back, 0 once the places are in
+var castOn=false;
+function castFade(over){
+  if(!cast) return;
+  // a little hysteresis, so a view resting on the threshold does not flicker between the two states
+  var want = over >= (castOn ? .35 : .5);
+  if(want===castOn) return;
+  castOn=want;
+  cast.classList.toggle('off', !castOn);
+  gutTo(castOn?CAST_GUT:0);
+}
+
 /* --- sessions --- */
 /* The reader lands in the latest session, the state of the world as it stands, and can walk
    back through the campaign. The map is the same in all of them; what changes is the recap
@@ -1764,7 +2278,7 @@ function drawSessions(){
   paint();
 }
 
-drawMap(); drawSessions();
+drawMap(); drawSessions(); drawCast();
 // opens on the whole map, or pulled back like a cover when that is what gives the title room
 var z0=startZoom();
 sizeTitle(z0);

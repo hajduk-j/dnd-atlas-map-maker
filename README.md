@@ -50,6 +50,26 @@ download needed).
 6. **Export site** → downloads `index.html` with the whole map inside.
 7. Later, **Open project** takes that same `index.html` back and you carry on where you left off.
 
+### The look of the interface
+
+The editor and the finished map share one look, in the manner of a game's HUD: plates of charcoal metal with a
+brass edge, lozenges where two things meet, brackets at the corners of the map view and a slightly darkened
+edge. In the finished map the title and the legend are plates of their own and the zoom buttons are one
+control. On the editor's stage a status plate shows how far in the map is (100% is the whole map on screen),
+where the pointer is on the map in the 0–1 coordinates a point is stored in, and how many points there are.
+
+**Map settings → Interface style** chooses between two looks, for the editor and the exported map alike. **Classic**
+is the charcoal metal, brass and parchment described above. **Arcane** is dark glass with fine lavender lines, a
+night sky with stars behind the map, curved ornaments at the corners of the view and headlines that glow. The
+choice is stored in the project and carried into the export, so a map opens in the look it was made in.
+
+### What's new and the tour
+
+When the editor has changed since a person last opened it, a **What's new** window lists the changes once;
+it can be reopened from the top bar. Its entries are the `CHANGELOG` array in `src/editor.js`, newest first,
+with the date as the id, and the editor remembers the newest id each browser has seen. **Quick tour** is the
+`TOUR_STEPS` array next to it. Both are kept up to date with every commit.
+
 ### Pictures in the finished map
 
 In the side panel the title of a place scrolls away with its text, while the session switch and the
@@ -135,8 +155,21 @@ lie over the regions and under the places, and never take a click.
 
 ### Players and parties
 
-**Map settings → Players** holds a profile for each person at the table: name, class, a short
-bio and a portrait. **Parties** are the markers that stand for a group of them on the map.
+**Map settings → Players** holds a profile for each person at the table: name, race, class,
+background, a short bio and a portrait. **Parties** are the markers that stand for a group of them
+on the map.
+
+Pulled all the way back, the finished map shows the players in a frame to the left of it, like the party
+frame of a game: a **Player heroes** plate, and under it one row per player, a portrait in a brass ring
+with a nameplate behind it that carries the name and, in italics, race and class. A click opens the
+profile in the panel; the row of the open player stays lit, and the plates step out when touched. The
+rows slide in one after another as the frame appears. While the frame is there the map is fitted into
+the room that is left of it; when the frame leaves, the map glides back to the middle of the screen. The rows are sized to the screen and to the number of players; when they do
+not fit in one column the frame grows a second one, and on a narrow screen (a phone held upright) the frame hangs under the map instead, as rows of portraits
+without nameplates, so the map keeps the whole width. The frame leaves at the same zoom as the title artwork (with the
+clouds when there is none): its rows draw back to the left one after another, last first, shrinking and blurring
+as they go, and return in order when the view is pulled back. So once the places are in, the players are reached through their party. A
+video portrait shows its first frame in the ring.
 
 A party has a color, a list of members and, for each session, a position, a note on what it did
 and, if you want, a flag saying it has left the map. Each of these holds until a later session
@@ -156,6 +189,10 @@ Pulled all the way back, the finished map shows drifting clouds and the title ar
 places and region names are not drawn. As the reader zooms in, the clouds and the title leave and
 they fade in at the same moment, so the screen is never both at once. A hint at the foot of the
 map says **Zoom in to reveal places** while they are out.
+
+The map can be dragged as far as its edges. Pulled past one, or sideways while it is narrower than
+the screen and held in the middle, it gives a little, more stiffly the further it goes, and springs
+back when let go.
 
 ### Sessions
 
@@ -244,7 +281,10 @@ One project is one JSON object:
   "intro": "Optional intro text.",
   "map": { "src": "data:image/jpeg;base64,…", "w": 2600, "h": 1700 },
   "frame": true,                  // engrave a border onto the sheet; absent counts as true
-  "players": [{ "id": "p1", "name": "Mira", "role": "half-elf ranger", "description": "…", "image": "data:image/jpeg;base64,…" }],
+  "players": [{                   // older projects carry one "role" line instead; it is read as the class
+    "id": "p1", "name": "Mira", "race": "half-elf", "class": "ranger", "background": "outlander",
+    "description": "…", "image": "data:image/jpeg;base64,…"
+  }],
   "parties": [{                   // optional markers that travel from session to session
     "id": "g1", "label": "The vanguard", "color": "#5b8fd6",
     "steps": {                    // keyed by session id, or "base" before any session exists
@@ -257,6 +297,7 @@ One project is one JSON object:
     "color": "#ffffff", "style": "dashed",   // style: "solid" | "dashed" | "dotted"
     "paths": [[[0.2,0.3],[0.35,0.4],[0.5,0.38]], [[0.5,0.38],[0.6,0.2]]]  // lines, each of at least two relative points
   }],
+  "ui": "classic",              // the look of the editor and the export: "classic" (default) or "arcane"
   "background": "magic",          // "magic" (default), "snow" or "mist"
   "titleImage": "data:image/webp;base64,…", // optional title artwork above the map
   "sessions": [                   // optional timeline, in chronological order

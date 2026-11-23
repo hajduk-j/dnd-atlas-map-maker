@@ -136,7 +136,10 @@ button{font:inherit;color:inherit;cursor:pointer}
   box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(11,16,18,.8),0 0 0 4.5px var(--line-2),0 5px 12px rgba(0,0,0,.55);
   font-family:var(--display);font-weight:600;font-size:calc(var(--b) * .42);color:var(--linen);
   transition:box-shadow .25s ease}
-.orb .face img,.orb .face video{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none}
+/* Filled from the edges rather than sized in the grid, where a percentage height does not take and each browser
+   then places the overhang differently. A portrait is cut to the circle from near its top, where the face is. */
+.orb .face img,.orb .face video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 15%;
+  display:block;user-select:none;-webkit-user-drag:none}
 /* the sheen of a bubble: a highlight up on the left and a tinted film round the rim */
 .orb .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.4),rgba(255,255,255,0) 24%);

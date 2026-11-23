@@ -1871,7 +1871,7 @@ document.getElementById("btnSettings").onclick = function(){
       "Click to add title artwork", 1600);
     art.classList.add("contain");
     sheet.appendChild(field("Title artwork", art));
-    sheet.appendChild(el("p","sub","Shown above the map, in the open space that appears when the view is pulled back, and gone as soon as you move in. The finished map then opens pulled back, so it is the first thing a reader sees. A PNG with a transparent background works best; it keeps its transparency."));
+    sheet.appendChild(el("p","sub","Shown above the map, in the open space that appears when the view is pulled back, and gone as soon as you move in. The finished map then opens pulled back, so it is the first thing a reader sees. A PNG with a transparent background works best; it keeps its transparency. It is also the icon when a reader adds the finished map to the home screen of a phone."));
 
     sheet.appendChild(el("h3",null,"Sessions"));
     sheet.appendChild(el("p","sub","The same map read at different moments of the campaign. The map itself never changes: sessions only decide what the side panel shows. Write a recap for each session, and on a point choose from which session its text, pictures and characters appear. With fewer than two sessions the finished map shows no session switch."));
@@ -2366,7 +2366,38 @@ function animatedInProject(){
   S.pois.forEach(function(p){ (p.images||[]).forEach(look); p.characters.forEach(function(c){ look(c.image); }); });
   return {count:n, bytes:bytes};
 }
-function buildSite(){
+/* The icon the finished map gets when a reader adds it to the home screen of a phone: the title artwork, whole,
+   on the ground it hangs on in the overview. A phone rounds the corners itself and shows a transparent pixel as
+   black, so the square is filled edge to edge and the artwork keeps clear of the corners. Made at export time
+   from the artwork as it is then, so it never goes stale; the last one is kept for the next export. */
+var APP_ICON = 192, appIcon = {from:null, src:null};
+function makeAppIcon(){
+  var from = S.titleImage;
+  if(!from) return Promise.resolve(null);
+  if(appIcon.from === from) return Promise.resolve(appIcon.src);
+  return new Promise(function(res){
+    var im = new Image();
+    im.onload = function(){
+      var n = APP_ICON, c = document.createElement("canvas"); c.width = n; c.height = n;
+      var g = c.getContext("2d");
+      var arcane = S.ui === "arcane", plain = S.background !== "magic";
+      var stops = plain ? [[0, arcane ? "#04061a" : "#050505"]]
+        : (arcane ? [[0,"#1c2468"],[.62,"#0a0d2e"],[1,"#04051a"]] : [[0,"#15201e"],[.72,"#080c0e"]]);
+      var ground = g.createRadialGradient(n/2, n*.42, 0, n/2, n*.42, n*.75);
+      stops.forEach(function(s){ ground.addColorStop(s[0], s[1]); });
+      g.fillStyle = ground; g.fillRect(0, 0, n, n);
+      var room = n*.8, sc = Math.min(room/im.naturalWidth, room/im.naturalHeight);
+      var w = im.naturalWidth*sc, h = im.naturalHeight*sc;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(im, (n-w)/2, (n-h)/2, w, h);
+      appIcon = {from:from, src:c.toDataURL("image/png")};
+      res(appIcon.src);
+    };
+    im.onerror = function(){ res(null); };
+    im.src = from;
+  });
+}
+function buildSite(icon){
   // The whole project is packed into the file, which is what lets the finished map be
   // opened here again. Which part of it the map draws is decided in the viewer: hidden
   // points, and the content of a region without a big pin, never reach the page.
@@ -2377,6 +2408,7 @@ function buildSite(){
   if(S.subtitle){
     meta += '\n<meta name="description" content="'+esc(S.subtitle)+'">\n<meta property="og:description" content="'+esc(S.subtitle)+'">';
   }
+  if(icon) meta += '\n<link rel="apple-touch-icon" href="'+icon+'">';
   return VIEWER
     .split("__PAGETITLE__").join(esc(pageTitle))
     .split("__META__").join(meta)
@@ -2405,7 +2437,10 @@ document.getElementById("btnPreview").onclick = function(){
 
 document.getElementById("btnExport").onclick = function(){
   if(!S.map) return toast("Upload a map image first.");
-  var html = buildSite();
+  makeAppIcon().then(openExport);
+};
+function openExport(icon){
+  var html = buildSite(icon);
   var visible = S.pois.filter(function(p){ return !p.hidden; }).length;
   var chars = S.pois.reduce(function(a,p){ return a + (p.hidden?0:p.characters.length); },0);
   var regs = S.factions.filter(function(f){ return hasArea(f) || f.anchor; }).length;
@@ -2447,7 +2482,7 @@ document.getElementById("btnExport").onclick = function(){
     acts.appendChild(cancel); acts.appendChild(go);
     sheet.appendChild(acts);
   });
-};
+}
 
 /* ============================ quick tour ============================ */
 /* A short walk through the editor, shown once to someone who opens it with nothing saved,
@@ -2461,7 +2496,8 @@ var CHANGELOG = [
   { id:"2026-11-23", title:"The map moves to the middle as you zoom in",
     items:["When the player heroes leave as you zoom in, the finished map now moves back to the middle of the screen instead of staying to one side.",
            "Dragging the finished map always responds: past an edge, or sideways while the map is narrower than the screen, it gives a little and springs back when you let go.",
-           "In a player or character profile the story now runs under the portrait and the race, class and background, across the whole side panel."] },
+           "In a player or character profile the story now runs under the portrait and the race, class and background, across the whole side panel.",
+           "The title artwork becomes the app icon: when a reader adds the finished map to the home screen of a phone, it shows your artwork."] },
   { id:"2026-11-10", title:"Arcane look, player heroes and a status bar",
     items:["Map settings now starts with Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",
            "Player heroes: pulled all the way back, the finished map shows your players in a frame beside it, each with a portrait, name, race and class. A click opens the profile, and the frame leaves as you zoom in. On a phone held upright it hangs under the map, so the map keeps the whole width.",
@@ -2542,7 +2578,7 @@ var TOUR_STEPS = [
     text:"The first thing in Map settings is Interface style, and the rest of the look is there too.",
     items:["Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",
            "Background behind the map: magic motes, snow or mist.",
-           "Title artwork: a lettered logo that hangs above the map when it is pulled back.",
+           "Title artwork: a lettered logo that hangs above the map when it is pulled back. It is also the icon of the map on a phone's home screen.",
            "Border: engrave a frame onto map images that have none."] },
   { title:"5. Preview, save and share",
     text:"Preview shows what visitors will see. Export site downloads the finished map as one index.html.",

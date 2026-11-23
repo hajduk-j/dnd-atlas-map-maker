@@ -141,6 +141,12 @@ no room above it — a wide map on a wide monitor — the atlas opens pulled bac
 title is the first thing a reader sees. On a screen with no room even then (a phone held
 sideways), it is left out. The editor itself does not draw it; the preview does.
 
+The title artwork is also the map's icon on a phone. When a reader opens the finished map from
+its link and adds it to the home screen, the icon is the artwork, whole, on the dark ground of
+the overview. The export makes it from the artwork as it is at that moment (a 192 px square,
+`apple-touch-icon` in the page head); it is not stored in the project. A phone keeps the icon it
+got when the map was added, so after a new artwork the map has to be added again.
+
 ### Boundary lines
 
 **Map settings → Boundary lines** draws lines over the map: a border, a road, a river. Press

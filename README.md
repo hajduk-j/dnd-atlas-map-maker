@@ -74,7 +74,8 @@ with the date as the id, and the editor remembers the newest id each browser has
 
 In the side panel the title of a place scrolls away with its text, while the session switch and the
 tabs stay in place, so a long text never squeezes the picture. A place's picture is capped to a
-height that leaves room to read, and a character's portrait sits beside their text. Click any
+height that leaves room to read, and a character's portrait sits beside their name and sheet, with
+their story underneath across the whole panel. Click any
 picture to open it full screen, whole and in color; for a place with several pictures the arrow
 keys or buttons move between them, and Escape closes it.
 

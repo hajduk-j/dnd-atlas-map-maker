@@ -1783,7 +1783,8 @@ document.getElementById("btnExport").onclick = function(){
 var CHANGELOG = [
   { id:"2026-11-23", title:"The map moves to the middle as you zoom in",
     items:["When the player heroes leave as you zoom in, the finished map now moves back to the middle of the screen instead of staying to one side.",
-           "Dragging the finished map always responds: past an edge, or sideways while the map is narrower than the screen, it gives a little and springs back when you let go."] },
+           "Dragging the finished map always responds: past an edge, or sideways while the map is narrower than the screen, it gives a little and springs back when you let go.",
+           "In a player or character profile the story now runs under the portrait and the race, class and background, across the whole side panel."] },
   { id:"2026-11-10", title:"Arcane look, player heroes and a status bar",
     items:["Map settings now starts with Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",
            "Player heroes: pulled all the way back, the finished map shows your players in a frame beside it, each with a portrait, name, race and class. A click opens the profile, and the frame leaves as you zoom in. On a phone held upright it hangs under the map, so the map keeps the whole width.",

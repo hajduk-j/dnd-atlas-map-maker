@@ -410,10 +410,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sh-body img,.sh-body video{cursor:zoom-in}
 .sh-body .area{max-height:min(44vh,340px);object-fit:cover}
 .gal-win{max-height:min(44vh,340px)}
-/* a portrait sits beside the text it belongs to instead of above it */
+/* a portrait sits beside the name and the sheet; the story runs under both, across the whole panel */
 .slide{display:flow-root}
-.slide img,.slide video,.slide .ph{float:left;width:42%;max-width:170px;margin:2px 16px 8px 0}
+.slide img,.slide video,.slide .ph{float:left;width:42%;max-width:170px;margin:2px 16px 16px 0}
 .slide h4{margin-top:0}
+.slide .prose{clear:both}
 .lightbox{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:26px;cursor:zoom-out;
   background:radial-gradient(ellipse at 50% 40%,rgba(16,13,10,.93),rgba(4,3,2,.97))}
 .lightbox img,.lightbox video{max-width:min(94vw,1500px);max-height:82vh;object-fit:contain;cursor:default;
@@ -1651,8 +1652,8 @@ function gallery(list, name){
   upd();
   return root;
 }
-/* One character: the portrait beside the text, the name and title, a short sheet if there is one, and the
-   story. `bare` leaves out the name and title, for a page whose heading already carries them. `swiped`
+/* One character: the portrait beside the name and title and a short sheet if there is one, and the story
+   under them. `bare` leaves out the name and title, for a page whose heading already carries them. `swiped`
    tells whether the press that ended on the portrait was a swipe, which should not open it full screen. */
 function profile(c, bare, swiped){
   var s=document.createElement('div'); s.className='slide';

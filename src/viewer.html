@@ -131,14 +131,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .orb .ring::before{content:"";position:absolute;inset:-5px;border-radius:50%;opacity:.55;filter:blur(4px);
   background:conic-gradient(var(--orb-cool),transparent 28%,var(--orb-warm) 50%,transparent 78%,var(--orb-cool));
   animation:orb-spin 14s linear infinite;animation-delay:calc(var(--i,0) * -2.3s);transition:opacity .25s}
-.orb .face{position:absolute;inset:0;z-index:1;border-radius:50%;overflow:hidden;display:grid;place-items:center;
+.orb .face{position:absolute;inset:0;z-index:1;border-radius:50%;overflow:hidden;display:block;
+  text-align:center;line-height:calc(var(--b) - 4px);
   background:radial-gradient(circle at 40% 35%,#3a4a46,var(--orb-core));border:2px solid var(--orb-rim);
   box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(11,16,18,.8),0 0 0 4.5px var(--line-2),0 5px 12px rgba(0,0,0,.55);
   font-family:var(--display);font-weight:600;font-size:calc(var(--b) * .42);color:var(--linen);
   transition:box-shadow .25s ease}
-/* Filled from the edges rather than sized in the grid, where a percentage height does not take and each browser
-   then places the overhang differently. A portrait is cut to the circle from near its top, where the face is. */
-.orb .face img,.orb .face video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 15%;
+/* The face is a plain block of fixed size, so the portrait's percentage height takes the same in every browser
+   (in a grid it did not, and each browser placed the overhang differently). A portrait is cut to the circle
+   from near its top, where the face is. */
+.orb .face img,.orb .face video{width:100%;height:100%;object-fit:cover;object-position:50% 15%;
   display:block;user-select:none;-webkit-user-drag:none}
 /* the sheen of a bubble: a highlight up on the left and a tinted film round the rim */
 .orb .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
@@ -653,9 +655,10 @@ button{font:inherit;color:inherit;cursor:pointer}
   :root{--panel-w:0px}
   body.has-sessions .recap-btn{display:inline-block}
   /* the panel is a page of its own: it slides up over the whole screen and has a plain way back */
-  .sh-close{display:flex;position:relative;top:auto;right:auto;align-items:center;gap:7px;width:auto;height:38px;align-self:flex-start;
+  .sh-close{display:flex;position:relative;top:auto;right:auto;align-items:center;width:auto;height:38px;align-self:flex-start;
     margin:calc(12px + env(safe-area-inset-top, 0px)) 0 0 14px;padding:0 14px 0 9px;font-size:0}
-  .sh-close::before{content:"\2039";font-size:26px;line-height:1;margin-top:-3px}
+  /* the spacing sits on the arrow, not in a gap: the hidden × is still a (zero-width) item and would take a gap of its own */
+  .sh-close::before{content:"\2039";font-size:26px;line-height:1;margin:-3px 8px 0 0}
   .sh-close::after{content:"Map";font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
   /* the way back and the session switch share one row, so little of the screen is taken from the page */
   .sh-top{position:static;margin:8px 18px 0}
@@ -720,10 +723,13 @@ button{font:inherit;color:inherit;cursor:pointer}
   .zoom{right:calc(var(--panel-w) + 12px);bottom:calc(14px + env(safe-area-inset-bottom, 0px));gap:8px}
   .zoom button{width:44px;height:44px}
   .zoom button svg{width:22px;height:22px}
-  .sh-close{width:38px;height:38px;font-size:18px}
   .car-nav button{width:40px;height:40px}
   .dots button{width:9px;height:9px}
   .ghost{padding:9px 13px}
+}
+/* the round close of the wide layout; below the breakpoint the same button is the "‹ Map" bar and keeps its size */
+@media (pointer:coarse) and (min-width:761px){
+  .sh-close{width:38px;height:38px;font-size:18px}
 }
 </style>
 </head>

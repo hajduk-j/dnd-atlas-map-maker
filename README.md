@@ -176,7 +176,10 @@ not fit in one column the frame grows a second one, and on a narrow screen (a ph
 without nameplates, so the map keeps the whole width. The frame leaves at the same zoom as the title artwork (with the
 clouds when there is none): its rows draw back to the left one after another, last first, shrinking and blurring
 as they go, and return in order when the view is pulled back. So once the places are in, the players are reached through their party. A
-video portrait shows its first frame in the ring.
+video portrait shows its first frame in the ring. The export takes that frame as a still picture and puts it
+in the file with the player (`poster`, not kept in the project), because an iPhone loads nothing of a video
+that is not playing and would leave the ring empty. The video in the player's profile shows the same still
+until it plays.
 
 A party has a color, a list of members and, for each session, a position, a note on what it did
 and, if you want, a flag saying it has left the map. Each of these holds until a later session

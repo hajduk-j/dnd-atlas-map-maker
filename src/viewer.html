@@ -816,7 +816,7 @@ function published(p){
     players:(p.players||[]).map(function(q){
       var legacy=(!q.race && !q['class']) ? (q.role||'') : '';
       return {id:q.id, name:q.name||'', race:q.race||'', 'class':q['class']||legacy, background:q.background||'',
-        description:q.description||'', image:q.image||null};
+        description:q.description||'', image:q.image||null, poster:q.poster||null};
     }),
     parties:(p.parties||[]).map(function(pt){
       var steps={};
@@ -1127,7 +1127,7 @@ function partyState(pt, idx){
 /* A player is shown the way any character is, with a short sheet of race, class and background. */
 function playerChar(q){
   var stats=[['Race',q.race],['Class',q['class']],['Background',q.background]].filter(function(r){ return r[1]; });
-  return {name:q.name, role:'', stats:stats, description:q.description, image:q.image};
+  return {name:q.name, role:'', stats:stats, description:q.description, image:q.image, poster:q.poster};
 }
 /* A party reaches the panel as a place of its own: its note is the text, its members the characters. */
 function partyPlace(pt){
@@ -1548,9 +1548,11 @@ var watcher=window.IntersectionObserver ? new IntersectionObserver(function(list
     if(en.isIntersecting && !CALM){ var p=v.play(); if(p && p.catch) p.catch(function(){}); } else v.pause();
   });
 },{threshold:.2}) : null;
-function mediaEl(src, alt){
+// `poster` is a still of the video, shown until it plays (an iPhone loads nothing of a video before that)
+function mediaEl(src, alt, poster){
   if(!isVideoSrc(src)){ var im=new Image(); im.src=src; im.alt=alt||''; return stillIfCalm(im); }
   var v=document.createElement('video');
+  if(poster) v.poster=poster;
   v.muted=true; v.loop=true; v.playsInline=true; v.preload='auto';
   v.setAttribute('muted',''); v.setAttribute('playsinline','');
   v.setAttribute('role','img'); v.setAttribute('aria-label',alt||'');
@@ -1667,7 +1669,7 @@ function gallery(list, name){
 function profile(c, bare, swiped){
   var s=document.createElement('div'); s.className='slide';
   if(c.image){
-    var im=mediaEl(c.image, c.name);
+    var im=mediaEl(c.image, c.name, c.poster);
     im.onclick=function(){ if(swiped && swiped()) return; openLightbox([c.image],0,c.name); };
     s.appendChild(im);
   }
@@ -2148,7 +2150,9 @@ var clouds=(function(){
    it a bubble with each one's portrait, one below the other, and a click opens their profile. The column is
    outside the map layer, so it keeps its place and size while the map moves, and it is there only while the
    clouds are. While it is, the map is fitted into the room that is left (CAST_GUT); once it has gone, the map
-   moves back to the middle (gut). A video portrait shows its first frame here. */
+   moves back to the middle (gut). A video portrait shows its first frame here: the still the export made of it
+   (`poster`), which every browser draws, or, in a map without one, the video held on its first frame, which an
+   iPhone leaves empty because it loads nothing of a video that is not playing. */
 var cast=null, castRow=null;
 var CAST_GUT=0;       // how much of the left of the screen the column takes from the map, in pixels
 /* The room the map leaves the column right now. It follows the column: when the players leave as the view moves
@@ -2168,8 +2172,8 @@ function gutTo(to, now){
   }
   gutRaf=requestAnimationFrame(step);
 }
-function castFace(src){
-  if(!isVideoSrc(src)){ var im=new Image(); im.src=src; im.alt=''; im.draggable=false; return stillIfCalm(im); }
+function castFace(src, poster){
+  if(!isVideoSrc(src) || poster){ var im=new Image(); im.src=poster||src; im.alt=''; im.draggable=false; return stillIfCalm(im); }
   var v=document.createElement('video');
   v.muted=true; v.playsInline=true; v.preload='auto';
   v.setAttribute('muted',''); v.setAttribute('playsinline',''); v.setAttribute('aria-hidden','true');
@@ -2193,7 +2197,7 @@ function drawCast(){
     b.title=name+(what ? ' · '+what : '');
     var ring=document.createElement('span'); ring.className='ring';
     var face=document.createElement('span'); face.className='face';
-    if(q.image) face.appendChild(castFace(q.image));
+    if(q.image) face.appendChild(castFace(q.image, q.poster));
     else face.textContent=name.trim().charAt(0).toUpperCase();
     ring.appendChild(face); b.appendChild(ring);
     var plate=document.createElement('span'); plate.className='plate';

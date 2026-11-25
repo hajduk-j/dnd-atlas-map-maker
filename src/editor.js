@@ -1720,11 +1720,63 @@ function makeAppIcon(){
     im.src = from;
   });
 }
-function buildSite(icon){
+/* A still of a video portrait: the frame the finished map would show of it. An iPhone does not load a video
+   that is not playing, so where the map shows only a picture of a player (the heroes frame) it shows this,
+   and the video in a profile has it to show until it plays. Made at export time and not stored. */
+var stills = {};
+function videoStill(uri){
+  if(stills[uri]) return Promise.resolve(stills[uri]);
+  return new Promise(function(res){
+    var v = document.createElement("video"), done = false;
+    v.muted = true; v.playsInline = true; v.preload = "auto";
+    function finish(out){
+      if(done) return; done = true;
+      if(out) stills[uri] = out;
+      v.removeAttribute("src"); v.load();
+      res(out || null);
+    }
+    v.onloadeddata = function(){ try{ v.currentTime = .01; }catch(e){ finish(null); } };
+    v.onseeked = function(){
+      var w = v.videoWidth, h = v.videoHeight;
+      if(!w || !h) return finish(null);
+      try{
+        var sc = Math.min(1, 720 / Math.max(w, h)), c = document.createElement("canvas");
+        c.width = Math.round(w*sc); c.height = Math.round(h*sc);
+        c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+        finish(c.toDataURL("image/jpeg", .82));
+      }catch(e){ finish(null); }
+    };
+    v.onerror = function(){ finish(null); };
+    setTimeout(function(){ finish(null); }, 10000);
+    v.src = blobUrl(uri);
+  });
+}
+// {playerId: still} for every player whose portrait is a video
+function makePosters(){
+  var list = S.players.filter(function(p){ return isVideoSrc(p.image); });
+  return Promise.all(list.map(function(p){ return videoStill(p.image); })).then(function(out){
+    var map = {};
+    list.forEach(function(p, i){ if(out[i]) map[p.id] = out[i]; });
+    return map;
+  });
+}
+function buildSite(icon, posters){
   // The whole project is packed into the file, which is what lets the finished map be
   // opened here again. Which part of it the map draws is decided in the viewer: hidden
   // points, and the content of a region without a big pin, never reach the page.
-  var json = JSON.stringify(S).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
+  var out = S;
+  if(posters){
+    out = {};
+    for(var k in S) out[k] = S[k];
+    out.players = S.players.map(function(p){
+      if(!posters[p.id]) return p;
+      var q = {};
+      for(var j in p) q[j] = p[j];
+      q.poster = posters[p.id];
+      return q;
+    });
+  }
+  var json = JSON.stringify(out).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
   var pageTitle = (S.tabTitle||"").trim() || S.title || "Atlas";
   // what a chat app or a search result shows when the link is shared
   var meta = '<meta property="og:type" content="website">\n<meta property="og:title" content="'+esc(pageTitle)+'">';
@@ -1760,10 +1812,10 @@ document.getElementById("btnPreview").onclick = function(){
 
 document.getElementById("btnExport").onclick = function(){
   if(!S.map) return toast("Upload a map image first.");
-  makeAppIcon().then(openExport);
+  Promise.all([makeAppIcon(), makePosters()]).then(function(r){ openExport(r[0], r[1]); });
 };
-function openExport(icon){
-  var html = buildSite(icon);
+function openExport(icon, posters){
+  var html = buildSite(icon, posters);
   var visible = S.pois.filter(function(p){ return !p.hidden; }).length;
   var chars = S.pois.reduce(function(a,p){ return a + (p.hidden?0:p.characters.length); },0);
   var regs = S.factions.filter(function(f){ return hasArea(f) || f.anchor; }).length;
@@ -1816,12 +1868,14 @@ function openExport(icon){
    as well, in case a change belongs in the tour. The editor remembers the newest id a person has seen and
    opens this window once when a newer one has arrived. */
 var CHANGELOG = [
+  { id:"2026-11-25", title:"Video portraits on the iPhone",
+    items:["Video portraits of players now show in the bubbles on an iPhone too: the export adds a still of each video, which the player's profile also shows until the video plays. Export your map again to get it."] },
   { id:"2026-11-23", title:"The map moves to the middle as you zoom in",
     items:["When the player heroes leave as you zoom in, the finished map now moves back to the middle of the screen instead of staying to one side.",
            "Dragging the finished map always responds: past an edge, or sideways while the map is narrower than the screen, it gives a little and springs back when you let go.",
            "In a player or character profile the story now runs under the portrait and the race, class and background, across the whole side panel.",
            "The title artwork becomes the app icon: when a reader adds the finished map to the home screen of a phone, it shows your artwork.",
-           "Portraits in the player heroes bubbles show on the iPhone again and keep the head in view: a tall picture is cut to the circle from near its top.",
+           "Portraits in the player heroes bubbles keep the head in view: a tall picture is cut to the circle from near its top.",
            "On a phone the Map button at the top of a page is one tidy plate again, the arrow and the word side by side."] },
   { id:"2026-11-10", title:"Arcane look, player heroes and a status bar",
     items:["Map settings now starts with Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",

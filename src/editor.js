@@ -1868,8 +1868,10 @@ function openExport(icon, posters){
    as well, in case a change belongs in the tour. The editor remembers the newest id a person has seen and
    opens this window once when a newer one has arrived. */
 var CHANGELOG = [
-  { id:"2026-11-25", title:"Video portraits on the iPhone",
-    items:["Video portraits of players now show in the bubbles on an iPhone too: the export adds a still of each video, which the player's profile also shows until the video plays. Export your map again to get it."] },
+  { id:"2026-11-25", title:"Player heroes get a page of their own",
+    items:["Pulled all the way back, the finished map shows a Player heroes button at its foot instead of a column of small portraits beside it, and the map keeps the whole width of the screen.",
+           "The button opens a page with every player's portrait at a size where the face can be seen, on a phone too. Select one to read their profile; going back shows the players again.",
+           "Video portraits of players now show in the bubbles on an iPhone too: the export adds a still of each video, which the player's profile also shows until the video plays. Export your map again to get it."] },
   { id:"2026-11-23", title:"The map moves to the middle as you zoom in",
     items:["When the player heroes leave as you zoom in, the finished map now moves back to the middle of the screen instead of staying to one side.",
            "Dragging the finished map always responds: past an edge, or sideways while the map is narrower than the screen, it gives a little and springs back when you let go.",
@@ -1952,7 +1954,7 @@ var TOUR_STEPS = [
            "Sessions: write a recap for each one, and hold a place's text, pictures or characters back until the session where they come up.",
            "Boundary lines: draw solid, dashed or dotted lines over the map for borders, roads or rivers. Named lines go in the legend.",
            "Players and parties: give each player a portrait, race, class, background and a story. Group them into parties and move a party from session to session; readers see a marker that travels and leaves a trail.",
-           "Player heroes: with the map pulled all the way back, readers see the players in a frame beside it, and a click opens a profile."] },
+           "Player heroes: with the map pulled all the way back, readers get a Player heroes button that opens a page with every player's portrait, and a click opens a profile."] },
   { title:"4. Make it yours",
     text:"The first thing in Map settings is Interface style, and the rest of the look is there too.",
     items:["Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",

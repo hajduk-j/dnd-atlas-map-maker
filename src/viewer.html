@@ -84,90 +84,94 @@ button{font:inherit;color:inherit;cursor:pointer}
   font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:var(--linen);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s}
 .zhint.on{opacity:1}
-/* The players in the overview, set out like the party frame of a game: a heading plate over a column of
-   portraits in brass rings, each with a nameplate tucked behind it that carries the name and, in italics,
-   race and class. The frame hangs on a thin brass rail. It is outside the map layer, so it keeps its place
-   and size while the map moves; layoutCast() sizes it to the screen and to the number of players and tells
-   the map how much room to leave (CAST_GUT). It is either on or off, switched by castFade() as the view moves in
-   or out; going off, the rows draw back to the left one after another, last first, shrinking and blurring as they
-   go, and coming on they return in order. Motion is kept for the moment of touching: at rest there is only a glow. */
-.cast{position:absolute;left:var(--cl,12px);top:50%;transform:translateY(-50%);z-index:5;
-  display:flex;flex-direction:column;align-items:center;gap:12px;
-  pointer-events:none;transition:visibility 0s}
-/* hidden only once the last row has left, so nothing is cut off mid-way */
-.cast.off{visibility:hidden;transition:visibility 0s 1s}
-/* the rail the frame hangs on: a brass line that fades out at both ends, with a lozenge at the top */
-.cast::before{content:"";position:absolute;left:-9px;top:-6px;bottom:-6px;width:1px;
-  background:linear-gradient(transparent,var(--brass) 14%,var(--brass) 86%,transparent)}
-.cast::after{content:"";position:absolute;left:-12px;top:-9px;width:7px;height:7px;background:var(--brass-lit);
-  transform:rotate(45deg);box-shadow:0 0 0 1.5px rgba(0,0,0,.7)}
-.cast.noname::before,.cast.noname::after{display:none}
-/* on a narrow screen the frame hangs under the map instead: the heading over rows of portraits */
-.cast.below{left:50%;top:var(--ct,60%);transform:translateX(-50%)}
-.cast.below .cast-row{width:100%;flex-direction:row;justify-content:center;align-content:flex-start}
-.cast.below.off .orb{transform:translateY(22px) scale(.78)}
-.cast.below.off .cast-title{transform:translateY(22px)}
-/* the heading is a plate of its own: charcoal with a brass edge and the words in capitals */
-.cast-title{align-self:stretch;text-align:center;padding:7px 10px 6px;font-family:var(--display);font-size:12.5px;
-  font-weight:600;line-height:1.3;letter-spacing:.2em;text-transform:uppercase;color:var(--brass-lit);
+/* The players are reached from the overview through one plate at the foot of the view: a few of their faces and
+   the words Player heroes. It is there only while the clouds are, switched by castFade() as the view moves in or
+   out, and it opens the roster. */
+.cast{position:fixed;left:calc((100% - var(--panel-w)) / 2);bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index:20;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:7px 18px 7px 12px;
+  font-family:var(--display);font-size:12.5px;font-weight:600;line-height:1.3;letter-spacing:.2em;
+  text-transform:uppercase;white-space:nowrap;color:var(--brass-lit);
+  background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:2px;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 0 0 3px rgba(11,16,18,.55),0 6px 18px rgba(0,0,0,.5);
+  text-shadow:0 1px 0 #000,0 0 12px var(--orb-glow);
+  transition:transform .45s cubic-bezier(.22,.7,.3,1),opacity .35s,border-color .25s,box-shadow .25s,visibility 0s}
+/* hidden only once it has faded, so it is not cut off mid-way */
+.cast.off{opacity:0;transform:translate(-50%,14px);visibility:hidden;pointer-events:none;
+  transition:transform .45s cubic-bezier(.22,.7,.3,1),opacity .35s,visibility 0s .45s}
+.cast:hover{border-color:var(--brass-lit);
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.24),inset 0 0 0 3px rgba(11,16,18,.55),0 0 18px var(--orb-glow),0 6px 18px rgba(0,0,0,.5)}
+.cast .pile{display:flex}
+.cast .pile .face{position:relative;width:24px;height:24px;margin-left:-8px;border-width:1.5px;
+  line-height:21px;font-size:11px;letter-spacing:0;text-shadow:none}
+.cast .pile .face:first-child{margin-left:0}
+/* a hint in the same place moves up to make room for the plate */
+body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
+
+/* The roster: every player at a size where the face can be seen, as the party screen of a game. It lies over
+   the map and under the side panel, so on a wide screen a profile opened from it reads beside it and on a phone
+   slides over it, and going back from the profile shows the roster again. */
+.roster{position:fixed;top:0;bottom:0;left:0;right:var(--panel-w);z-index:25;overflow-y:auto;overscroll-behavior:contain;
+  padding:28px 24px calc(28px + env(safe-area-inset-bottom, 0px));
+  background:radial-gradient(ellipse at 50% 40%,rgba(16,13,10,.8),rgba(4,3,2,.93));
+  opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
+.roster.on{opacity:1;visibility:visible;transition:opacity .3s,visibility 0s}
+.roster-in{min-height:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:26px}
+.roster-title{margin:0;padding:7px 22px 6px;font-family:var(--display);font-size:13.5px;font-weight:600;line-height:1.3;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--brass-lit);
   background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:2px;
   box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 0 0 3px rgba(11,16,18,.55),0 3px 10px rgba(0,0,0,.5);
   text-shadow:0 1px 0 #000,0 0 12px var(--orb-glow)}
-.cast-title span{display:block;margin-right:-.2em}
-.cast.off .ring::before{animation-play-state:paused}
-.cast-row{--b:48px;--g:10px;--ow:180px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:var(--g)}
-.orb{width:var(--ow);height:var(--b);padding:0;background:none;border:none;display:flex;align-items:center;
-  text-align:left;pointer-events:auto;
-  transition:transform .6s cubic-bezier(.22,.7,.3,1),opacity .5s,filter .5s;transition-delay:calc(var(--i,0) * 55ms)}
-.cast.off .orb{transform:translateX(-34px) scale(.78);opacity:0;filter:blur(5px);pointer-events:none;
-  transition-delay:calc((var(--n,10) - 1 - var(--i,0)) * 40ms)}
-.cast-title,.cast::before,.cast::after{transition:transform .6s cubic-bezier(.22,.7,.3,1),opacity .5s,filter .5s}
-.cast.off .cast-title{transform:translateX(-34px);opacity:0;filter:blur(5px)}
-.cast.off::before,.cast.off::after{opacity:0}
-.orb:focus-visible{outline:none}
-.orb:focus-visible .face,.orb:focus-visible .plate{outline:2px solid var(--brass-lit);outline-offset:2px}
-.orb .ring{position:relative;flex:0 0 auto;display:block;width:var(--b);height:var(--b);z-index:1}
+.roster-close{position:fixed;top:calc(16px + env(safe-area-inset-top, 0px));right:calc(var(--panel-w) + 16px);
+  width:44px;height:44px;padding:0;display:grid;place-items:center;font-size:24px;line-height:1;color:var(--linen);
+  background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:2px;
+  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),0 3px 10px rgba(0,0,0,.5)}
+.roster-close:hover{border-color:var(--brass-lit);color:var(--brass-lit)}
+.roster-grid{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:28px 18px}
+/* Each player: the portrait in a brass ring, the name under it and, in italics, race and class. Two fit across
+   a phone held upright, so the ring takes half the width there and no more than --b anywhere. The players come
+   in one after another as the roster opens. */
+.hero{--b:min(132px, calc(50vw - 60px));width:calc(var(--b) + 36px);padding:4px 0;background:none;border:none;
+  display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;
+  opacity:0;transform:translateY(16px) scale(.92);
+  transition:transform .55s cubic-bezier(.22,.7,.3,1),opacity .4s;transition-delay:calc(var(--i,0) * 45ms)}
+.roster.on .hero{opacity:1;transform:none}
+.hero:focus-visible{outline:none}
+.hero:focus-visible .face{outline:2px solid var(--brass-lit);outline-offset:4px}
+.hero .ring{position:relative;display:block;width:var(--b);height:var(--b);margin-bottom:11px;
+  transition:transform .3s cubic-bezier(.22,.7,.3,1)}
 /* a soft aura that turns slowly behind the ring */
-.orb .ring::before{content:"";position:absolute;inset:-5px;border-radius:50%;opacity:.55;filter:blur(4px);
+.hero .ring::before{content:"";position:absolute;inset:-7px;border-radius:50%;opacity:.55;filter:blur(5px);
   background:conic-gradient(var(--orb-cool),transparent 28%,var(--orb-warm) 50%,transparent 78%,var(--orb-cool));
   animation:orb-spin 14s linear infinite;animation-delay:calc(var(--i,0) * -2.3s);transition:opacity .25s}
-.orb .face{position:absolute;inset:0;z-index:1;border-radius:50%;overflow:hidden;display:block;
-  text-align:center;line-height:calc(var(--b) - 4px);
-  background:radial-gradient(circle at 40% 35%,#3a4a46,var(--orb-core));border:2px solid var(--orb-rim);
-  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(11,16,18,.8),0 0 0 4.5px var(--line-2),0 5px 12px rgba(0,0,0,.55);
+.roster:not(.on) .ring::before{animation-play-state:paused}
+.hero .face,.cast .face{position:absolute;inset:0;z-index:1;border-radius:50%;overflow:hidden;display:block;
+  text-align:center;line-height:calc(var(--b) - 6px);
+  background:radial-gradient(circle at 40% 35%,#3a4a46,var(--orb-core));border:3px solid var(--orb-rim);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4.5px rgba(11,16,18,.8),0 0 0 5.5px var(--line-2),0 8px 18px rgba(0,0,0,.55);
   font-family:var(--display);font-weight:600;font-size:calc(var(--b) * .42);color:var(--linen);
   transition:box-shadow .25s ease}
+.cast .face{position:relative;inset:auto;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.5)}
 /* The face is a plain block of fixed size, so the portrait's percentage height takes the same in every browser
    (in a grid it did not, and each browser placed the overhang differently). A portrait is cut to the circle
    from near its top, where the face is. */
-.orb .face img,.orb .face video{width:100%;height:100%;object-fit:cover;object-position:50% 15%;
-  display:block;user-select:none;-webkit-user-drag:none}
+.hero .face img,.hero .face video,.cast .face img,.cast .face video{width:100%;height:100%;object-fit:cover;
+  object-position:50% 15%;display:block;user-select:none;-webkit-user-drag:none}
 /* the sheen of a bubble: a highlight up on the left and a tinted film round the rim */
-.orb .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+.hero .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.4),rgba(255,255,255,0) 24%);
-  box-shadow:inset 0 0 10px rgba(0,0,0,.45),inset 0 -6px 14px var(--orb-film)}
-/* the nameplate: tucked behind the ring, so the portrait sits on its left end */
-.orb .plate{position:relative;flex:1;min-width:0;height:calc(var(--b) * .82);margin-left:-14px;padding:0 18px 0 22px;
-  display:flex;flex-direction:column;justify-content:center;
-  background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-left:none;border-radius:0 3px 3px 0;
-  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 -1px 0 rgba(0,0,0,.3),0 3px 10px rgba(0,0,0,.5);
-  transition:transform .25s cubic-bezier(.22,.7,.3,1),border-color .25s,box-shadow .25s}
-.orb .plate::after{content:"";position:absolute;right:6px;top:50%;width:5px;height:5px;margin-top:-2.5px;
-  background:var(--brass);transform:rotate(45deg);transition:background .25s}
-.orb .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-family:var(--display);font-size:14.5px;font-weight:600;line-height:1.2;letter-spacing:.02em;color:var(--linen);
-  transition:color .25s}
-.orb .sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-style:italic;font-size:12.5px;line-height:1.2;color:var(--muted)}
-/* touched or open: the ring and the plate light up in brass, and the plate steps out a little */
-.orb:hover .plate,.orb[aria-current="true"] .plate{transform:translateX(3px);border-color:var(--brass-lit);
-  box-shadow:inset 0 1px 0 rgba(236,208,150,.24),0 0 18px var(--orb-glow),0 3px 10px rgba(0,0,0,.5)}
-.orb:hover .plate::after,.orb[aria-current="true"] .plate::after{background:var(--brass-lit)}
-.orb:hover .nm,.orb[aria-current="true"] .nm{color:var(--brass-lit)}
-.orb:hover .face,.orb[aria-current="true"] .face{
-  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(11,16,18,.8),0 0 0 4.5px var(--brass-lit),0 0 20px var(--orb-cool),0 5px 12px rgba(0,0,0,.55)}
-.orb:hover .ring::before,.orb[aria-current="true"] .ring::before{opacity:.95}
-.cast.noname .plate{display:none}
+  box-shadow:inset 0 0 14px rgba(0,0,0,.45),inset 0 -8px 20px var(--orb-film)}
+.hero .nm{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:var(--display);font-size:17px;font-weight:600;line-height:1.2;letter-spacing:.02em;color:var(--linen);
+  text-shadow:0 1px 2px #000;transition:color .25s}
+.hero .sub{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-style:italic;font-size:14px;line-height:1.25;color:var(--muted)}
+/* touched or open: the ring lights up in brass and lifts a little */
+.hero:hover .ring,.hero[aria-current="true"] .ring{transform:translateY(-3px)}
+.hero:hover .face,.hero[aria-current="true"] .face{
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4.5px rgba(11,16,18,.8),0 0 0 5.5px var(--brass-lit),0 0 26px var(--orb-cool),0 8px 18px rgba(0,0,0,.55)}
+.hero:hover .ring::before,.hero[aria-current="true"] .ring::before{opacity:.95}
+.hero:hover .nm,.hero[aria-current="true"] .nm{color:var(--brass-lit)}
 @keyframes orb-spin{to{transform:rotate(360deg)}}
 .pin{position:absolute;--knob:16px;
   transform:translate(-50%,calc(var(--knob) / -2)) scale(var(--inv,1));
@@ -519,8 +523,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .zoom button{background:none;border:0;border-radius:0;box-shadow:none}
 .zoom button+button{border-top:1px solid var(--line)}
 .zoom button:hover{background:rgba(220,174,106,.16);filter:none}
-/* the players' frame sits above the darkened edge */
-.cast{z-index:16}
 
 /* ---------- Arcane: night glass and starlight ---------- */
 /* The second look, chosen in Map settings. The same parts as the classic one, dressed differently: a night sky
@@ -554,14 +556,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 :root[data-ui="arcane"] .zoom,
 :root[data-ui="arcane"] .rgn,
 :root[data-ui="arcane"] .zhint,
-:root[data-ui="arcane"] .cast-title,
-:root[data-ui="arcane"] .orb .plate,
+:root[data-ui="arcane"] .cast,
+:root[data-ui="arcane"] .roster-title,
+:root[data-ui="arcane"] .roster-close,
 :root[data-ui="arcane"] .ghost,
 :root[data-ui="arcane"] .about .ghost{
   background:linear-gradient(rgba(36,43,118,.78),rgba(12,15,52,.86));border-color:rgba(200,192,255,.5);border-radius:11px 3px 11px 3px;
   box-shadow:inset 0 1px 0 rgba(220,214,255,.22),inset 0 0 0 3px rgba(8,10,40,.5),0 0 18px rgba(120,110,255,.2),0 6px 18px rgba(0,0,0,.5);
   color:var(--linen)}
-:root[data-ui="arcane"] .orb .plate{border-radius:0 11px 3px 0}
 :root[data-ui="arcane"] .zoom{border-radius:11px 3px}
 :root[data-ui="arcane"] .ghost:hover,
 :root[data-ui="arcane"] .about .ghost:hover{background:linear-gradient(rgba(70,80,170,.85),rgba(24,28,84,.9));filter:none;color:#fff}
@@ -577,17 +579,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 :root[data-ui="arcane"] .zoom button{color:var(--brass-lit)}
 :root[data-ui="arcane"] .zoom button:hover{background:rgba(160,150,255,.2);color:#fff}
 :root[data-ui="arcane"] .zoom button+button{border-top-color:rgba(200,192,255,.25)}
-:root[data-ui="arcane"] .cast-title{color:#ffe3c8;text-shadow:0 0 12px rgba(255,150,210,.55)}
-:root[data-ui="arcane"] .orb .nm{color:var(--linen)}
-:root[data-ui="arcane"] .orb .sub{color:#a9aad8}
-:root[data-ui="arcane"] .orb .plate::after{border-radius:50%;transform:none;background:#fff;box-shadow:0 0 6px rgba(180,170,255,.9)}
-:root[data-ui="arcane"] .orb:hover .plate,
-:root[data-ui="arcane"] .orb[aria-current="true"] .plate{border-color:#fff;box-shadow:inset 0 1px 0 rgba(220,214,255,.3),0 0 20px rgba(150,140,255,.55),0 3px 10px rgba(0,0,0,.5)}
-:root[data-ui="arcane"] .orb:hover .nm,
-:root[data-ui="arcane"] .orb[aria-current="true"] .nm{color:#fff}
-:root[data-ui="arcane"] .orb:hover .face,
-:root[data-ui="arcane"] .orb[aria-current="true"] .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(8,10,40,.8),0 0 0 4.5px #fff,0 0 22px rgba(140,130,255,.8),0 5px 12px rgba(0,0,0,.55)}
-:root[data-ui="arcane"] .orb .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3.5px rgba(8,10,40,.8),0 0 0 4.5px rgba(200,192,255,.6),0 5px 12px rgba(0,0,0,.55)}
+:root[data-ui="arcane"] .cast,
+:root[data-ui="arcane"] .roster-title{color:#ffe3c8;text-shadow:0 0 12px rgba(255,150,210,.55)}
+:root[data-ui="arcane"] .cast:hover,
+:root[data-ui="arcane"] .roster-close:hover{border-color:#fff;color:#fff;
+  box-shadow:inset 0 1px 0 rgba(220,214,255,.3),0 0 20px rgba(150,140,255,.55),0 6px 18px rgba(0,0,0,.5)}
+:root[data-ui="arcane"] .roster{background:radial-gradient(ellipse at 50% 40%,rgba(10,13,50,.8),rgba(2,3,20,.94))}
+:root[data-ui="arcane"] .hero .nm{color:var(--linen);text-shadow:0 0 12px rgba(140,130,255,.5),0 1px 2px #000}
+:root[data-ui="arcane"] .hero .sub{color:#a9aad8}
+:root[data-ui="arcane"] .hero:hover .nm,
+:root[data-ui="arcane"] .hero[aria-current="true"] .nm{color:#fff}
+:root[data-ui="arcane"] .hero:hover .face,
+:root[data-ui="arcane"] .hero[aria-current="true"] .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4.5px rgba(8,10,40,.8),0 0 0 5.5px #fff,0 0 28px rgba(140,130,255,.8),0 8px 18px rgba(0,0,0,.55)}
+:root[data-ui="arcane"] .hero .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4.5px rgba(8,10,40,.8),0 0 0 5.5px rgba(200,192,255,.6),0 8px 18px rgba(0,0,0,.55)}
 /* the corners of the view: a curved ornament with a fine second line, instead of a bracket */
 :root[data-ui="arcane"] .hud{box-shadow:inset 0 0 120px rgba(3,4,40,.6)}
 :root[data-ui="arcane"] .hud .c{width:58px;height:58px;border:0;opacity:.9;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2056%2056%27%3E%3Cpath%20d%3D%27M3%2054V20C3%2010%2010%203%2020%203H54%27%20fill%3D%27none%27%20stroke%3D%27%23d7d0ff%27%20stroke-width%3D%271.6%27%2F%3E%3Cpath%20d%3D%27M9%2054V24C9%2015%2015%209%2024%209H54%27%20fill%3D%27none%27%20stroke%3D%27%23d7d0ff%27%20stroke-opacity%3D%27.45%27%2F%3E%3Ccircle%20cx%3D%273%27%20cy%3D%273%27%20r%3D%272.6%27%20fill%3D%27%23d7d0ff%27%2F%3E%3Cpath%20d%3D%27M19%2014l4%204-4%204-4-4z%27%20fill%3D%27none%27%20stroke%3D%27%23d7d0ff%27%2F%3E%3C%2Fsvg%3E") no-repeat 0 0 / 100% 100%;
@@ -685,7 +689,9 @@ button{font:inherit;color:inherit;cursor:pointer}
   .slide .stats{order:4}
   .slide .prose{order:5}
   .slide .prose p{max-width:none}
-  .cast-title{font-size:10px;letter-spacing:.14em}
+  .roster{padding:20px 14px calc(24px + env(safe-area-inset-bottom, 0px))}
+  .roster-close{top:calc(12px + env(safe-area-inset-top, 0px));right:12px}
+  .roster-grid{gap:24px 14px}
   .car .car-nav{margin:-14px -4px 12px;padding:14px 4px 10px}
   /* a place: its picture across the width too, with no ceiling on its height */
   .sh-body .area{max-height:none;width:100%}
@@ -866,10 +872,7 @@ var V={z:1,x:0,y:0};
 // that is smaller than the viewport is held in the middle (both ends equal).
 function bounds(){
   var r=vp.getBoundingClientRect(), w=DATA.map.w*V.z, h=DATA.map.h*V.z, x=null, y=null;
-  // a map that fits beside the players' column is centred in what the column leaves; a wider one sits flush
-  // right until it fills the screen, so the two cases meet without a jump
-  if(w<=r.width-gut) x=gut+(r.width-gut-w)/2;
-  else if(w<=r.width) x=r.width-w;
+  if(w<=r.width) x=(r.width-w)/2;
   if(h<=r.height) y=(r.height-h)/2;
   return {x0:x===null?r.width-w:x, x1:x===null?0:x, y0:y===null?r.height-h:y, y1:y===null?0:y, w:r.width, h:r.height};
 }
@@ -900,7 +903,7 @@ function springBack(){
   if(fx>=b.x0 && fx<=b.x1 && fy>=b.y0 && fy<=b.y1){ apply(); return; }
   function step(ts){
     if(t0===null) t0=ts;
-    // the target is taken afresh each frame, so a map still moving aside for the players lands where it should
+    // the target is taken afresh each frame, so a screen that changes size mid-way still lands it where it should
     var p=CALM?1:Math.min(1,(ts-t0)/260), e=1-Math.pow(1-p,3), b=bounds();
     V.x=fx+(Math.min(b.x1,Math.max(b.x0,fx))-fx)*e;
     V.y=fy+(Math.min(b.y1,Math.max(b.y0,fy))-fy)*e;
@@ -951,7 +954,7 @@ function fitZoom(){
   var r=vp.getBoundingClientRect();
   // a fixed margin eats a phone screen, so the breathing room scales with the screen
   var pad=Math.min(48, r.width*.07, r.height*.07);
-  return Math.min((r.width-CAST_GUT-pad)/DATA.map.w,(r.height-pad)/DATA.map.h);
+  return Math.min((r.width-pad)/DATA.map.w,(r.height-pad)/DATA.map.h);
 }
 /* The title artwork is sized for the open band between the header and the top of the map
    as it stands when fully pulled back — that band, not the map, is what it has to fit into,
@@ -977,8 +980,7 @@ function sizeTitle(z){
   if(art.hidden) return;
   var h=Math.min(room*.94, 320);
   art.style.height=(h/z)+'px';
-  // the map is centred in what the players' column leaves, so that is the width the title may take
-  art.style.maxWidth=(Math.min((r.width-CAST_GUT)*.94, DATA.map.w*z*1.15)/z)+'px';
+  art.style.maxWidth=(Math.min(r.width*.94, DATA.map.w*z*1.15)/z)+'px';
   art.style.bottom='calc(100% + '+(Math.max(6,(room-h)/2)/z)+'px)';
 }
 window.addEventListener('resize',function(){ sizeTitle(startZoom()); apply(); });
@@ -986,8 +988,7 @@ function fit(){ showAt(fitZoom()); }
 function showAt(z){
   if(!DATA.map) return;
   var r=vp.getBoundingClientRect();
-  gutTo(CAST_GUT, true);   // the overview is where the players' column stands
-  V.z=z; V.x=gut+(r.width-gut-DATA.map.w*z)/2; V.y=(r.height-DATA.map.h*z)/2; apply();
+  V.z=z; V.x=(r.width-DATA.map.w*z)/2; V.y=(r.height-DATA.map.h*z)/2; apply();
 }
 function zoomAt(cx,cy,f){
   var r=vp.getBoundingClientRect(), px=cx-r.left, py=cy-r.top;
@@ -1016,7 +1017,7 @@ vp.addEventListener('pointerdown',function(e){
   // Every finger counts towards a pinch, including one that landed on a pin — on a small
   // map that happens all the time. Only the panning is kept off the pins, so that a tap
   // on one still opens its panel instead of dragging the map.
-  var onPin = !!e.target.closest('.pin, .orb');
+  var onPin = !!e.target.closest('.pin');
   if(!down().length) tap={x:e.clientX, y:e.clientY, moved:false};
   pts[e.pointerId]={x:e.clientX,y:e.clientY,id:e.pointerId};
   var a=down();
@@ -1068,7 +1069,7 @@ vp.addEventListener('dragstart',function(e){ e.preventDefault(); });
 // A click on the bare map leaves the place that is open: back to the overview on a wide screen, the panel put
 // away on a phone. Not the end of a drag or a pinch, though, and not a click on a pin, which opens a place.
 vp.addEventListener('click',function(e){
-  if(e.target.closest('.pin, .orb') || (tap && tap.moved)) return;
+  if(e.target.closest('.pin') || (tap && tap.moved)) return;
   if(cur) closeSheet();
 });
 document.getElementById('zi').onclick=function(){var r=vp.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,1.3)};
@@ -1303,7 +1304,8 @@ function hideRegion(f){
   var pin=regionPin(f.id); if(pin) pin.removeAttribute('data-hot');
 }
 function markCurrent(id){
-  var all=vp.querySelectorAll('.pin, .orb');
+  // the roster is outside the map, so its players are looked for in the whole page
+  var all=document.querySelectorAll('.pin, .hero');
   for(var i=0;i<all.length;i++) all[i].setAttribute('aria-current', all[i].dataset.id===id?'true':'false');
 }
 
@@ -1428,9 +1430,11 @@ function revealSheet(){
   }
 }
 function hideSheet(){ sheet.classList.remove('open'); sheet.setAttribute('aria-hidden','true'); cur=null; markCurrent(''); }
+// The roster is a step of its own, taken before the panel's: Back puts away the panel first, then the roster.
 window.addEventListener('popstate',function(){
   if(ignorePop){ ignorePop=false; return; }
-  if(historyOpen){ historyOpen=false; if(MOBILE.matches && sheet.classList.contains('open')) hideSheet(); }
+  if(historyOpen){ historyOpen=false; if(MOBILE.matches && sheet.classList.contains('open')) hideSheet(); return; }
+  if(rosterHist){ rosterHist=false; closeRoster(); }
 });
 function closeSheet(){
   if(MOBILE.matches){
@@ -1730,7 +1734,12 @@ function carousel(list){
   return root;
 }
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){ closeSheet(); return; }
+  if(e.key==='Escape'){
+    // what is on top goes first: on a phone the panel lies over the roster, on a wide screen beside it
+    if(rosterOpen() && !(MOBILE.matches && sheet.classList.contains('open'))) closeRoster();
+    else closeSheet();
+    return;
+  }
   if(!cur||curTab!=='chars') return;
   var c=body.querySelector('.car');
   if(!c||!c.carUpd) return;
@@ -2145,33 +2154,16 @@ var clouds=(function(){
   return {mount:mount, zoom:zoom};
 })();
 
-/* --- the players, beside the map in the overview --- */
-/* Pulled all the way back, the map shows the people at the table in a column to its left: a heading and under
-   it a bubble with each one's portrait, one below the other, and a click opens their profile. The column is
-   outside the map layer, so it keeps its place and size while the map moves, and it is there only while the
-   clouds are. While it is, the map is fitted into the room that is left (CAST_GUT); once it has gone, the map
-   moves back to the middle (gut). A video portrait shows its first frame here: the still the export made of it
+/* --- the players: a plate in the overview and the roster it opens --- */
+/* Pulled all the way back, the map has a Player heroes plate at its foot, there only while the clouds are. It
+   opens the roster: every player's portrait large enough to see, with the name and race and class under it, and
+   a click opens their profile in the panel. The roster is built the first time it opens, so a map that is only
+   looked at loads no more portraits than the three faces on the plate. A video portrait shows its first frame: the still the export made of it
    (`poster`), which every browser draws, or, in a map without one, the video held on its first frame, which an
    iPhone leaves empty because it loads nothing of a video that is not playing. */
-var cast=null, castRow=null;
-var CAST_GUT=0;       // how much of the left of the screen the column takes from the map, in pixels
-/* The room the map leaves the column right now. It follows the column: when the players leave as the view moves
-   in, it eases to nothing and a map narrower than the screen glides to the middle; when they come back, it eases
-   back and the map moves aside for them. */
-var gut=0, gutRaf=0;
-function gutTo(to, now){
-  cancelAnimationFrame(gutRaf); gutRaf=0;
-  if(now){ gut=to; return; }
-  var from=gut, t0=null, dur=CALM?0:500;
-  function step(ts){
-    if(t0===null) t0=ts;
-    var p=dur ? Math.min(1,(ts-t0)/dur) : 1;
-    gut=from+(to-from)*(1-Math.pow(1-p,3));
-    gutRaf = p<1 ? requestAnimationFrame(step) : 0;
-    if(!pan && !spring) apply();
-  }
-  gutRaf=requestAnimationFrame(step);
-}
+var cast=null, roster=null, rosterFrom=null;
+// on a phone the open roster is a step in the browser history, like the panel, so Back puts it away
+var rosterHist=false;
 function castFace(src, poster){
   if(!isVideoSrc(src) || poster){ var im=new Image(); im.src=poster||src; im.alt=''; im.draggable=false; return stillIfCalm(im); }
   var v=document.createElement('video');
@@ -2181,82 +2173,76 @@ function castFace(src, poster){
   v.addEventListener('loadeddata',function(){ try{ v.currentTime=.01; }catch(e){} });
   return v;
 }
+// a player's portrait in a ring, or the first letter of the name when there is none
+function heroFace(q){
+  var face=document.createElement('span'); face.className='face';
+  if(q.image) face.appendChild(castFace(q.image, q.poster));
+  else face.textContent=(q.name||'Unnamed').trim().charAt(0).toUpperCase();
+  return face;
+}
 function drawCast(){
   if(!DATA.players.length || !DATA.map) return;
-  cast=document.createElement('nav'); cast.className='cast off'; cast.setAttribute('aria-label','Player heroes');
-  var head=document.createElement('div'); head.className='cast-title';
-  var words=document.createElement('span'); words.textContent='Player heroes'; head.appendChild(words);
-  castRow=document.createElement('div'); castRow.className='cast-row';
-  cast.appendChild(head); cast.appendChild(castRow);
+  cast=document.createElement('button'); cast.type='button'; cast.className='cast off';
+  cast.setAttribute('aria-haspopup','dialog');
+  var pile=document.createElement('span'); pile.className='pile'; pile.setAttribute('aria-hidden','true');
+  DATA.players.slice(0,3).forEach(function(q){ pile.appendChild(heroFace(q)); });
+  var words=document.createElement('span'); words.textContent='Player heroes';
+  cast.appendChild(pile); cast.appendChild(words);
+  cast.onclick=openRoster;
+  document.body.appendChild(cast);
+  document.body.classList.add('has-cast');
+}
+function buildRoster(){
+  roster=document.createElement('div'); roster.className='roster';
+  roster.setAttribute('role','dialog'); roster.setAttribute('aria-modal','true'); roster.setAttribute('aria-label','Player heroes');
+  var close=document.createElement('button'); close.type='button'; close.className='roster-close';
+  close.setAttribute('aria-label','Close'); close.textContent='×';
+  var inner=document.createElement('div'); inner.className='roster-in';
+  var head=document.createElement('h2'); head.className='roster-title'; head.textContent='Player heroes';
+  var grid=document.createElement('div'); grid.className='roster-grid';
   DATA.players.forEach(function(q, i){
-    var b=document.createElement('button'), name=q.name||'Unnamed';
-    b.type='button'; b.className='orb'; b.dataset.id='player-'+q.id;
+    var b=document.createElement('button');
+    b.type='button'; b.className='hero'; b.dataset.id='player-'+q.id;
     b.style.setProperty('--i', i);
-    b.setAttribute('aria-label', name+', player');
-    var what=[q.race, q['class']].filter(Boolean).join(' ');
-    b.title=name+(what ? ' · '+what : '');
     var ring=document.createElement('span'); ring.className='ring';
-    var face=document.createElement('span'); face.className='face';
-    if(q.image) face.appendChild(castFace(q.image, q.poster));
-    else face.textContent=name.trim().charAt(0).toUpperCase();
-    ring.appendChild(face); b.appendChild(ring);
-    var plate=document.createElement('span'); plate.className='plate';
-    var nm=document.createElement('span'); nm.className='nm'; nm.textContent=name; plate.appendChild(nm);
-    var line=[q.race, q['class']].filter(Boolean).join(' \u00b7 ');
-    if(line){ var sub=document.createElement('span'); sub.className='sub'; sub.textContent=line; plate.appendChild(sub); }
-    b.appendChild(plate);
+    ring.appendChild(heroFace(q)); b.appendChild(ring);
+    var nm=document.createElement('span'); nm.className='nm'; nm.textContent=q.name||'Unnamed'; b.appendChild(nm);
+    var line=[q.race, q['class']].filter(Boolean).join(' · ');
+    if(line){ var sub=document.createElement('span'); sub.className='sub'; sub.textContent=line; b.appendChild(sub); }
     b.onclick=function(){ openPlace({id:'player-'+q.id, isPlayer:true, player:q}); };
-    castRow.appendChild(b);
+    grid.appendChild(b);
   });
-  vp.appendChild(cast);
-  layoutCast();
+  inner.appendChild(head); inner.appendChild(grid);
+  roster.appendChild(close); roster.appendChild(inner);
+  // a click anywhere but on a player puts the roster away, the close button included
+  roster.addEventListener('click',function(e){ if(!e.target.closest('.hero')) closeRoster(); });
+  document.body.appendChild(roster);
 }
-/* The column goes down the left side and takes the height between the header and the foot of the screen. When
-   the players do not fit in one column at a size worth looking at (ten on a phone held upright do, a few
-   dozen would not), it grows a second one. The names are left out on a narrow screen, where they would
-   not fit: the portrait is the thing, and the profile has the name. */
-function layoutCast(){
-  if(!cast) return;
-  var n=DATA.players.length, narrow=vp.clientWidth<600;
-  cast.classList.toggle('below', narrow);
-  cast.classList.toggle('noname', narrow);
-  cast.style.setProperty('--n', n);
-  if(narrow){
-    // A phone held upright has little width and plenty of height, so the players go under the map: rows of
-    // portraits, evened out (ten are two rows of five), and the map keeps the whole width.
-    var gapN=8, minN=38, maxN=50, sideN=14, room=vp.clientWidth-sideN*2;
-    var perN=Math.max(1, Math.floor((room+gapN)/(minN+gapN)));
-    var rows=Math.ceil(n/perN); perN=Math.ceil(n/rows);
-    var bN=Math.floor(Math.max(minN, Math.min(maxN, (room+gapN)/perN-gapN)));
-    castRow.style.setProperty('--b', bN+'px');
-    castRow.style.setProperty('--g', gapN+'px');
-    castRow.style.setProperty('--ow', bN+'px');
-    castRow.style.height='';
-    cast.style.width=Math.max(150, perN*bN+(perN-1)*gapN)+'px';
-    CAST_GUT=0; gutTo(0, true);
-    // just under the map as it stands with the whole of it on screen
-    var mapBottom=(vp.clientHeight+DATA.map.h*fitZoom())/2;
-    cast.style.setProperty('--ct', Math.round(mapBottom+18)+'px');
-    return;
+function rosterOpen(){ return !!roster && roster.classList.contains('on'); }
+function openRoster(){
+  if(!roster) buildRoster();
+  if(rosterOpen()) return;
+  rosterFrom=document.activeElement;
+  // a roster made a moment ago has not been drawn yet; reading its size draws it, so the players still glide in
+  void roster.offsetWidth;
+  roster.classList.add('on');
+  roster.scrollTop=0;
+  markCurrent(cur ? cur.id : '');
+  if(MOBILE.matches && !rosterHist){ try{ history.pushState({atlasRoster:1},''); rosterHist=true; }catch(e){} }
+  var first=roster.querySelector('.hero');
+  if(first) first.focus({preventScroll:true});
+}
+function closeRoster(){
+  if(!rosterOpen()) return;
+  roster.classList.remove('on');
+  if(rosterHist){
+    rosterHist=false; ignorePop=true;
+    try{ history.back(); }catch(e){ ignorePop=false; }
+    setTimeout(function(){ ignorePop=false; },400);
   }
-  var edge=20, gap=10, min=42, max=58, plateW=176, lap=14;
-  var titleH=44, pad=headerBottom()+8;
-  var avail=Math.max(150, vp.clientHeight-pad*2-titleH-gap);
-  var per=Math.max(1, Math.floor((avail+gap)/(min+gap)));
-  var cols=Math.ceil(n/per); per=Math.ceil(n/cols);
-  var b=Math.floor(Math.max(min, Math.min(max, (avail+gap)/per-gap)));
-  var ow=b+plateW-lap;
-  castRow.style.setProperty('--b', b+'px');
-  castRow.style.setProperty('--g', gap+'px');
-  castRow.style.setProperty('--ow', ow+'px');
-  castRow.style.height=(per*(b+gap)-gap)+'px';
-  var w=Math.max(150, cols*ow+(cols-1)*gap);
-  cast.style.width=w+'px';
-  cast.style.setProperty('--cl', edge+'px');
-  CAST_GUT=edge+w+edge;
-  gutTo(castOn?CAST_GUT:0, true);
+  if(rosterFrom && rosterFrom.focus) rosterFrom.focus({preventScroll:true});
+  rosterFrom=null;
 }
-window.addEventListener('resize',function(){ layoutCast(); sizeTitle(startZoom()); apply(); });
 // `over` is how much of the overview is on screen: 1 pulled all the way back, 0 once the places are in
 var castOn=false;
 function castFade(over){
@@ -2266,7 +2252,6 @@ function castFade(over){
   if(want===castOn) return;
   castOn=want;
   cast.classList.toggle('off', !castOn);
-  gutTo(castOn?CAST_GUT:0);
 }
 
 /* --- sessions --- */

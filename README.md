@@ -166,17 +166,18 @@ lie over the regions and under the places, and never take a click.
 background, a short bio and a portrait. **Parties** are the markers that stand for a group of them
 on the map.
 
-Pulled all the way back, the finished map shows the players in a frame to the left of it, like the party
-frame of a game: a **Player heroes** plate, and under it one row per player, a portrait in a brass ring
-with a nameplate behind it that carries the name and, in italics, race and class. A click opens the
-profile in the panel; the row of the open player stays lit, and the plates step out when touched. The
-rows slide in one after another as the frame appears. While the frame is there the map is fitted into
-the room that is left of it; when the frame leaves, the map glides back to the middle of the screen. The rows are sized to the screen and to the number of players; when they do
-not fit in one column the frame grows a second one, and on a narrow screen (a phone held upright) the frame hangs under the map instead, as rows of portraits
-without nameplates, so the map keeps the whole width. The frame leaves at the same zoom as the title artwork (with the
-clouds when there is none): its rows draw back to the left one after another, last first, shrinking and blurring
-as they go, and return in order when the view is pulled back. So once the places are in, the players are reached through their party. A
-video portrait shows its first frame in the ring. The export takes that frame as a still picture and puts it
+Pulled all the way back, the finished map has a **Player heroes** plate at its foot, with the faces of the
+first three players on it. It is there only in the overview: it leaves at the same zoom as the title artwork
+(with the clouds when there is none) and comes back when the view is pulled back, so once the places are in,
+the players are reached through their party. The map keeps the whole width of the screen either way.
+
+The plate opens the roster, a page over the map with every player's portrait in a brass ring, large enough
+to see the face (two across on a phone held upright), and under it the name and, in italics, race and class.
+The players come in one after another as it opens. A click opens the profile in the panel. On a wide screen
+the panel is beside the roster, so you can go from one player to the next, and the open one stays lit; on a
+phone the profile slides over the roster, and Map or Back returns to it. The roster closes with ×, Escape, a
+click beside the portraits or, on a phone, Back. It is built the first time it opens, so the portraits load
+only then. A video portrait shows its first frame in the ring. The export takes that frame as a still picture and puts it
 in the file with the player (`poster`, not kept in the project), because an iPhone loads nothing of a video
 that is not playing and would leave the ring empty. The video in the player's profile shows the same still
 until it plays.

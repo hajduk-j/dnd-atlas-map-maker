@@ -1868,6 +1868,11 @@ function openExport(icon, posters){
    as well, in case a change belongs in the tour. The editor remembers the newest id a person has seen and
    opens this window once when a newer one has arrived. */
 var CHANGELOG = [
+  { id:"2026-11-26", title:"Player heroes float in as bubbles",
+    items:["Pulled all the way back, the finished map shows your players as small floating bubbles with their faces instead of a Player heroes button. A tap on them opens the page with the large portraits.",
+           "With more than five players, the last bubble shows how many more there are.",
+           "The Zoom in to reveal places hint is now quiet lettering on the map, not a plate that looks like a button.",
+           "The page with the player portraits scrolls with a fine line in the colours of the map instead of the browser's grey bar."] },
   { id:"2026-11-25", title:"Player heroes get a page of their own",
     items:["Pulled all the way back, the finished map shows a Player heroes button at its foot instead of a column of small portraits beside it, and the map keeps the whole width of the screen.",
            "The button opens a page with every player's portrait at a size where the face can be seen, on a phone too. Select one to read their profile; going back shows the players again.",
@@ -1954,7 +1959,7 @@ var TOUR_STEPS = [
            "Sessions: write a recap for each one, and hold a place's text, pictures or characters back until the session where they come up.",
            "Boundary lines: draw solid, dashed or dotted lines over the map for borders, roads or rivers. Named lines go in the legend.",
            "Players and parties: give each player a portrait, race, class, background and a story. Group them into parties and move a party from session to session; readers see a marker that travels and leaves a trail.",
-           "Player heroes: with the map pulled all the way back, readers get a Player heroes button that opens a page with every player's portrait, and a click opens a profile."] },
+           "Player heroes: with the map pulled all the way back, readers see your players as small floating bubbles that open a page with every player's portrait, and a click opens a profile."] },
   { title:"4. Make it yours",
     text:"The first thing in Map settings is Interface style, and the rest of the look is there too.",
     items:["Interface style: Classic (brass and parchment) or Arcane (night glass and starlight). It changes the editor and the exported map.",

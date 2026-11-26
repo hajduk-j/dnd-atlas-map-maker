@@ -166,12 +166,14 @@ lie over the regions and under the places, and never take a click.
 background, a short bio and a portrait. **Parties** are the markers that stand for a group of them
 on the map.
 
-Pulled all the way back, the finished map has a **Player heroes** plate at its foot, with the faces of the
-first three players on it. It is there only in the overview: it leaves at the same zoom as the title artwork
-(with the clouds when there is none) and comes back when the view is pulled back, so once the places are in,
-the players are reached through their party. The map keeps the whole width of the screen either way.
+Pulled all the way back, the finished map has the players' faces at its foot as small floating bubbles, of the
+same make as the large ones in the roster, over the words **Player heroes**. Up to five players get a bubble each;
+with more, the fifth bubble says how many more there are (+2). The bubbles are one button. They are there only in
+the overview: they leave at the same zoom as the title artwork (with the clouds when there is none) and come back
+when the view is pulled back, so once the places are in, the players are reached through their party. The map
+keeps the whole width of the screen either way.
 
-The plate opens the roster, a page over the map with every player's portrait in a brass ring, large enough
+The bubbles open the roster, a page over the map with every player's portrait in a brass ring, large enough
 to see the face (two across on a phone held upright), and under it the name and, in italics, race and class.
 The players come in one after another as it opens. A click opens the profile in the panel. On a wide screen
 the panel is beside the roster, so you can go from one player to the next, and the open one stays lit; on a
@@ -199,7 +201,8 @@ the atlas, parties appear with the places once the reader has zoomed in.
 Pulled all the way back, the finished map shows drifting clouds and the title artwork, and the
 places and region names are not drawn. As the reader zooms in, the clouds and the title leave and
 they fade in at the same moment, so the screen is never both at once. A hint at the foot of the
-map says **Zoom in to reveal places** while they are out.
+map says **Zoom in to reveal places** while they are out, lettered straight on the view between two fine rules
+so it does not read as a button.
 
 The map can be dragged as far as its edges. Pulled past one, or sideways while it is narrower than
 the screen and held in the middle, it gives a little, more stiffly the further it goes, and springs

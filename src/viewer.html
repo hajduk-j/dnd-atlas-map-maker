@@ -79,33 +79,45 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pin{opacity:var(--pins,1)}
 /* in the overview the clouds and the title have the stage; places and region names come in as they leave */
 .cv.pins-off .pin{visibility:hidden;pointer-events:none}
-.zhint{position:fixed;left:calc((100% - var(--panel-w)) / 2);bottom:18px;transform:translateX(-50%);z-index:20;
-  padding:7px 16px;background:rgba(8,12,14,.82);border:1px solid var(--line-2);border-radius:3px;
-  font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--linen);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s}
-.zhint.on{opacity:1}
-/* The players are reached from the overview through one plate at the foot of the view: a few of their faces and
-   the words Player heroes. It is there only while the clouds are, switched by castFade() as the view moves in or
-   out, and it opens the roster. */
-.cast{position:fixed;left:calc((100% - var(--panel-w)) / 2);bottom:calc(16px + env(safe-area-inset-bottom, 0px));
-  z-index:20;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:7px 18px 7px 12px;
-  font-family:var(--display);font-size:12.5px;font-weight:600;line-height:1.3;letter-spacing:.2em;
+/* The hint is lettering on the view, not a control: italic words between two fine rules, with a dark halo that
+   keeps them readable over clouds and open sea alike. */
+.zhint{position:fixed;left:calc((100% - var(--panel-w)) / 2);bottom:calc(22px + env(safe-area-inset-bottom, 0px));
+  transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;
+  font-family:var(--body);font-style:italic;font-size:15px;line-height:1.3;letter-spacing:.02em;color:var(--linen);
+  text-shadow:0 1px 2px #000,0 0 10px rgba(0,0,0,.85);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s}
+.zhint::before,.zhint::after{content:"";width:28px;height:1px;background:linear-gradient(90deg,transparent,var(--brass-lit))}
+.zhint::after{background:linear-gradient(90deg,var(--brass-lit),transparent)}
+.zhint.on{opacity:.92}
+/* The players are reached from the overview through their faces at the foot of the view: small bubbles of the
+   same make as the roster's, floating each at its own pace, over the words Player heroes. The whole group is one
+   button that opens the roster. It is there only while the clouds are, switched by castFade() as the view moves
+   in or out. */
+.cast{position:fixed;left:calc((100% - var(--panel-w)) / 2);bottom:calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index:20;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:9px;
+  padding:10px 12px 4px;background:none;border:0;
+  font-family:var(--display);font-size:11.5px;font-weight:600;line-height:1.3;letter-spacing:.2em;
   text-transform:uppercase;white-space:nowrap;color:var(--brass-lit);
-  background:linear-gradient(#2e2922,#171410);border:1px solid var(--line-2);border-radius:2px;
-  box-shadow:inset 0 1px 0 rgba(236,208,150,.16),inset 0 0 0 3px rgba(11,16,18,.55),0 6px 18px rgba(0,0,0,.5);
-  text-shadow:0 1px 0 #000,0 0 12px var(--orb-glow);
-  transition:transform .45s cubic-bezier(.22,.7,.3,1),opacity .35s,border-color .25s,box-shadow .25s,visibility 0s}
+  text-shadow:0 1px 2px #000,0 0 10px rgba(0,0,0,.9);
+  transition:transform .45s cubic-bezier(.22,.7,.3,1),opacity .35s,visibility 0s}
 /* hidden only once it has faded, so it is not cut off mid-way */
 .cast.off{opacity:0;transform:translate(-50%,14px);visibility:hidden;pointer-events:none;
   transition:transform .45s cubic-bezier(.22,.7,.3,1),opacity .35s,visibility 0s .45s}
-.cast:hover{border-color:var(--brass-lit);
-  box-shadow:inset 0 1px 0 rgba(236,208,150,.24),inset 0 0 0 3px rgba(11,16,18,.55),0 0 18px var(--orb-glow),0 6px 18px rgba(0,0,0,.5)}
-.cast .pile{display:flex}
-.cast .pile .face{position:relative;width:24px;height:24px;margin-left:-8px;border-width:1.5px;
-  line-height:21px;font-size:11px;letter-spacing:0;text-shadow:none}
-.cast .pile .face:first-child{margin-left:0}
-/* a hint in the same place moves up to make room for the plate */
-body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
+.cast:focus-visible{outline:none}
+.cast:focus-visible .face{outline:2px solid var(--brass-lit);outline-offset:4px}
+.cast .pile{display:flex;gap:10px}
+.cast .bub{--b:44px;position:relative;display:block;width:var(--b);height:var(--b);
+  animation:bob 3.6s ease-in-out infinite;animation-delay:calc(var(--i,0) * -.9s)}
+.cast.off .bub,.cast.off .bub::before{animation-play-state:paused}
+@keyframes bob{0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)}}
+/* the turning aura of the roster's rings, scaled down */
+.cast .bub::before{content:"";position:absolute;inset:-4px;border-radius:50%;opacity:.6;filter:blur(3px);
+  background:conic-gradient(var(--orb-cool),transparent 28%,var(--orb-warm) 50%,transparent 78%,var(--orb-cool));
+  animation:orb-spin 14s linear infinite;animation-delay:calc(var(--i,0) * -2.3s);transition:opacity .25s}
+.cast .cap{transition:color .25s}
+.cast:hover .bub::before{opacity:.95}
+.cast:hover .cap{color:var(--linen)}
+/* a hint in the same place moves up to make room for the players */
+body.has-cast .zhint{bottom:calc(106px + env(safe-area-inset-bottom, 0px))}
 
 /* The roster: every player at a size where the face can be seen, as the party screen of a game. It lies over
    the map and under the side panel, so on a wide screen a profile opened from it reads beside it and on a phone
@@ -115,6 +127,11 @@ body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
   background:radial-gradient(ellipse at 50% 40%,rgba(16,13,10,.8),rgba(4,3,2,.93));
   opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
 .roster.on{opacity:1;visibility:visible;transition:opacity .3s,visibility 0s}
+/* when the players do not fit, the roster scrolls with a fine line in the colour of the rules, not the system's bar */
+.roster{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.roster::-webkit-scrollbar{width:8px}
+.roster::-webkit-scrollbar-track{background:transparent}
+.roster::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px;border:2px solid transparent;background-clip:content-box}
 .roster-in{min-height:100%;max-width:900px;margin:0 auto;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:26px}
 .roster-title{margin:0;padding:7px 22px 6px;font-family:var(--display);font-size:13.5px;font-weight:600;line-height:1.3;
@@ -151,16 +168,21 @@ body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
   box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4.5px rgba(11,16,18,.8),0 0 0 5.5px var(--line-2),0 8px 18px rgba(0,0,0,.55);
   font-family:var(--display);font-weight:600;font-size:calc(var(--b) * .42);color:var(--linen);
   transition:box-shadow .25s ease}
-.cast .face{position:relative;inset:auto;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.5)}
 /* The face is a plain block of fixed size, so the portrait's percentage height takes the same in every browser
    (in a grid it did not, and each browser placed the overhang differently). A portrait is cut to the circle
    from near its top, where the face is. */
 .hero .face img,.hero .face video,.cast .face img,.cast .face video{width:100%;height:100%;object-fit:cover;
   object-position:50% 15%;display:block;user-select:none;-webkit-user-drag:none}
 /* the sheen of a bubble: a highlight up on the left and a tinted film round the rim */
-.hero .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+.hero .face::after,.cast .face::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.4),rgba(255,255,255,0) 24%);
   box-shadow:inset 0 0 14px rgba(0,0,0,.45),inset 0 -8px 20px var(--orb-film)}
+/* the small bubbles at the foot of the overview: a thinner rim, rings and sheen to their size */
+.cast .face{border-width:2px;line-height:calc(var(--b) - 4px);letter-spacing:0;text-shadow:none;
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3px rgba(11,16,18,.75),0 0 0 4px var(--line-2),0 5px 10px rgba(0,0,0,.55)}
+.cast .face::after{box-shadow:inset 0 0 6px rgba(0,0,0,.45),inset 0 -4px 8px var(--orb-film)}
+.cast .more .face{font-size:calc(var(--b) * .34)}
+.cast:hover .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3px rgba(11,16,18,.75),0 0 0 4px var(--brass-lit),0 0 16px var(--orb-cool),0 5px 10px rgba(0,0,0,.55)}
 .hero .nm{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-family:var(--display);font-size:17px;font-weight:600;line-height:1.2;letter-spacing:.02em;color:var(--linen);
   text-shadow:0 1px 2px #000;transition:color .25s}
@@ -461,7 +483,7 @@ body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
 .zoom button:hover{color:#f0d9a6}
 .ghost:hover,.zoom button:hover{filter:brightness(1.16);background:linear-gradient(var(--plate-top),var(--plate-bot))}
 .ghost:active,.zoom button:active{transform:translateY(1px)}
-.rgn,.zhint{
+.rgn{
   background:linear-gradient(#2a251f,#171410);border-color:var(--line-2);border-radius:2px;
   box-shadow:inset 0 1px 0 rgba(236,208,150,.14),0 6px 18px rgba(0,0,0,.5);
 }
@@ -555,8 +577,6 @@ body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
 :root[data-ui="arcane"] .legend,
 :root[data-ui="arcane"] .zoom,
 :root[data-ui="arcane"] .rgn,
-:root[data-ui="arcane"] .zhint,
-:root[data-ui="arcane"] .cast,
 :root[data-ui="arcane"] .roster-title,
 :root[data-ui="arcane"] .roster-close,
 :root[data-ui="arcane"] .ghost,
@@ -579,11 +599,15 @@ body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
 :root[data-ui="arcane"] .zoom button{color:var(--brass-lit)}
 :root[data-ui="arcane"] .zoom button:hover{background:rgba(160,150,255,.2);color:#fff}
 :root[data-ui="arcane"] .zoom button+button{border-top-color:rgba(200,192,255,.25)}
-:root[data-ui="arcane"] .cast,
 :root[data-ui="arcane"] .roster-title{color:#ffe3c8;text-shadow:0 0 12px rgba(255,150,210,.55)}
-:root[data-ui="arcane"] .cast:hover,
 :root[data-ui="arcane"] .roster-close:hover{border-color:#fff;color:#fff;
   box-shadow:inset 0 1px 0 rgba(220,214,255,.3),0 0 20px rgba(150,140,255,.55),0 6px 18px rgba(0,0,0,.5)}
+/* the hint and the players' words are lettering on the night sky, glowing a little */
+:root[data-ui="arcane"] .zhint{color:var(--linen);text-shadow:0 1px 2px #000,0 0 12px rgba(120,110,255,.7)}
+:root[data-ui="arcane"] .cast{color:#ffe3c8;text-shadow:0 1px 2px #000,0 0 12px rgba(255,150,210,.55)}
+:root[data-ui="arcane"] .cast:hover .cap{color:#fff}
+:root[data-ui="arcane"] .cast .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3px rgba(8,10,40,.8),0 0 0 4px rgba(200,192,255,.6),0 5px 10px rgba(0,0,0,.55)}
+:root[data-ui="arcane"] .cast:hover .face{box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3px rgba(8,10,40,.8),0 0 0 4px #fff,0 0 18px rgba(140,130,255,.8),0 5px 10px rgba(0,0,0,.55)}
 :root[data-ui="arcane"] .roster{background:radial-gradient(ellipse at 50% 40%,rgba(10,13,50,.8),rgba(2,3,20,.94))}
 :root[data-ui="arcane"] .hero .nm{color:var(--linen);text-shadow:0 0 12px rgba(140,130,255,.5),0 1px 2px #000}
 :root[data-ui="arcane"] .hero .sub{color:#a9aad8}
@@ -689,6 +713,9 @@ body.has-cast .zhint{bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
   .slide .stats{order:4}
   .slide .prose{order:5}
   .slide .prose p{max-width:none}
+  /* five bubbles stay clear of the zoom buttons on the narrowest phones */
+  .cast .bub{--b:40px}
+  .cast .pile{gap:8px}
   .roster{padding:20px 14px calc(24px + env(safe-area-inset-bottom, 0px))}
   .roster-close{top:calc(12px + env(safe-area-inset-top, 0px));right:12px}
   .roster-grid{gap:24px 14px}
@@ -2154,11 +2181,11 @@ var clouds=(function(){
   return {mount:mount, zoom:zoom};
 })();
 
-/* --- the players: a plate in the overview and the roster it opens --- */
-/* Pulled all the way back, the map has a Player heroes plate at its foot, there only while the clouds are. It
-   opens the roster: every player's portrait large enough to see, with the name and race and class under it, and
-   a click opens their profile in the panel. The roster is built the first time it opens, so a map that is only
-   looked at loads no more portraits than the three faces on the plate. A video portrait shows its first frame: the still the export made of it
+/* --- the players: bubbles in the overview and the roster they open --- */
+/* Pulled all the way back, the map has the players' faces at its foot as small floating bubbles, there only
+   while the clouds are. They open the roster: every player's portrait large enough to see, with the name and race
+   and class under it, and a click opens their profile in the panel. The roster is built the first time it opens,
+   so a map that is only looked at loads no more portraits than the few in the bubbles. A video portrait shows its first frame: the still the export made of it
    (`poster`), which every browser draws, or, in a map without one, the video held on its first frame, which an
    iPhone leaves empty because it loads nothing of a video that is not playing. */
 var cast=null, roster=null, rosterFrom=null;
@@ -2180,13 +2207,26 @@ function heroFace(q){
   else face.textContent=(q.name||'Unnamed').trim().charAt(0).toUpperCase();
   return face;
 }
+// a face in a small floating bubble; `i` sets it apart from its neighbours in the float and the aura
+function castBubble(face, i){
+  var b=document.createElement('span'); b.className='bub'; b.style.setProperty('--i', i);
+  b.appendChild(face);
+  return b;
+}
+var CAST_MAX=5;
 function drawCast(){
   if(!DATA.players.length || !DATA.map) return;
   cast=document.createElement('button'); cast.type='button'; cast.className='cast off';
   cast.setAttribute('aria-haspopup','dialog');
   var pile=document.createElement('span'); pile.className='pile'; pile.setAttribute('aria-hidden','true');
-  DATA.players.slice(0,3).forEach(function(q){ pile.appendChild(heroFace(q)); });
-  var words=document.createElement('span'); words.textContent='Player heroes';
+  // with more players than bubbles, the last bubble says how many more there are
+  var all=DATA.players, n=all.length>CAST_MAX ? CAST_MAX-1 : all.length;
+  all.slice(0,n).forEach(function(q, i){ pile.appendChild(castBubble(heroFace(q), i)); });
+  if(all.length>n){
+    var rest=document.createElement('span'); rest.className='face'; rest.textContent='+'+(all.length-n);
+    var more=castBubble(rest, n); more.className+=' more'; pile.appendChild(more);
+  }
+  var words=document.createElement('span'); words.className='cap'; words.textContent='Player heroes';
   cast.appendChild(pile); cast.appendChild(words);
   cast.onclick=openRoster;
   document.body.appendChild(cast);
